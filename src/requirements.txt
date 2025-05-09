@@ -1,0 +1,4 @@
+# requirements.txt
+
+requests>=2.0
+# web3.py   # Uncomment and install when implementing real blockchain anchoring
