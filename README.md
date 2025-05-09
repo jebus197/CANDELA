@@ -1,5 +1,7 @@
 # CANDELA
 
+**Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring **
+
 Addressing the LLM "Black Box" & Reliability Challenge
 
 A fundamental challenge in working with frontier Large Language Models (LLMs) is their inherent nature as probabilistic prediction engines. Unlike traditional software, LLMs do not execute explicit rules or logic programmatically. Their output is based on statistical patterns learned from vast training data, leading to well-documented issues such as hallucination, unpredictable drift from instructions, inconsistency, and a general lack of transparency in their reasoning process. This poses a significant hurdle for deploying LLMs in applications requiring high reliability, safety, and auditability.
