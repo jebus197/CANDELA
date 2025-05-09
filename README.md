@@ -1,6 +1,7 @@
 # CANDELA
 
-**Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring **
+**Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
+
 
 Addressing the LLM "Black Box" & Reliability Challenge
 
