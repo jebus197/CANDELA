@@ -1,4 +1,4 @@
-# ECLIPS
+# CANDELA
 
 Addressing the LLM "Black Box" & Reliability Challenge
 
