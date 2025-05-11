@@ -11,7 +11,7 @@ This document explains how to read and extend `src/directives_schema.json`.
 | `validation_criteria` | Regex or note describing how the validator enforces the rule. |
 
 ## Why micro-directives?
-Complex concepts (e.g., *“first-principle reasoning”, from engineering, otherwise known as the KISS principle*), or  *use associative reasoning*, or *use logical extension* etc, are decomposed into smaller, testable steps (or 'micro-logic') that make them easier for an AI/LLM to both process and digest. The aim is to break complex conceptual directives into their individual unit parts, in order to achieve a good approximation of the originally intended concepts.:
+Complex concepts (e.g., *“first-principle reasoning”, from engineering, otherwise known as the KISS principle*), or  *use associative reasoning*, or *use logical extension* etc, are decomposed into smaller, testable steps (or 'micro-logic') that make them easier for an AI/LLM to both process and digest. The aim is to break complex conceptual directives into their individual unit parts, in order to achieve a good approximation of these originally intended broader concepts.:
 24a. Restate the problem in ≤15 words
 24b. List two fundamental facts
 24c. Build the answer from those facts in plain language
