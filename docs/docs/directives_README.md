@@ -16,7 +16,9 @@ Complex concepts (e.g., *“first-principle reasoning”, from engineering, othe
 For Example:
 
 24a. Restate the problem in ≤15 words
+
 24b. List two fundamental facts
+
 24c. Build the answer from those facts in plain language
 
 This lets the Guardian validator apply simple checks (word count, pattern match) while still nudging the LLM toward deeper reasoning.
