@@ -1,42 +1,54 @@
 # Directive Schema – Human Guide
 
-This document explains how to read and extend `src/directives_schema.json`.
+This document explains how to read and extend `src/directives_schema.json` and why **micro-directives** are used.
 
 | Field | Meaning |
 |-------|---------|
 | `id` / `sub` | Unique identifier (letters mark micro-directives). |
 | `text` | Natural-language rule given to the LLM. |
-| `category` | Broad grouping (Ethical, Reasoning, Monitoring…). |
+| `category` | Broad grouping (Ethical, Reasoning, Monitoring, etc.). |
 | `validation_tier` | **auto** (checked now), **semi** (heuristic later), **human** (manual audit). |
 | `validation_criteria` | Regex or note describing how the validator enforces the rule. |
 
-## Why micro-directives?
-Complex concepts (e.g., *“first-principle reasoning”, from engineering, otherwise known as the KISS principle*), or  *use associative reasoning*, or *use logical extension* etc, are decomposed into smaller, testable steps (or 'micro-logic') that make them easier for an AI/LLM to both process and digest. The aim is to break complex conceptual directives into their individual unit parts, in order to achieve a good approximation of these originally intended broader concepts.
+---
 
-For Example:
+## Micro-directive examples (present in v0.1 schema)
 
-24a. Restate the problem in ≤15 words
+| ID | Purpose | Validation check |
+|----|---------|------------------|
+| **14a** | *Associative Reasoning 1* – list one tangential concept (≤ 5 words). | Line starts with `Related:` |
+| **14b** | *Associative Reasoning 2* – explain the connection in ≤ 25 words. | ≤ 25 words |
+| **14c** | *Associative Reasoning 3* – state one practical implication (≤ 30 words). | ≤ 30 words |
+| **24a** | *First-Principles 1* – restate the problem in ≤ 15 words. | ≤ 15 words |
+| **24b** | *First-Principles 2* – list two fundamental facts. | Exactly two bullet points |
+| **24c** | *First-Principles 3* – build the answer from those facts (plain language, ≤ 100 words). | ≤ 100 words |
 
-24b. List two fundamental facts
+These small, testable steps let the Guardian validator enforce higher-level reasoning without deep semantic parsing.
 
-24c. Build the answer from those facts in plain language
+---
 
-24d Consider how well your response corresponds to what is known about a first principle approach to problem solving in enginnering
+## Validation tiers
 
-24e This is often referered to as the KISS approach to problem solving. (Keep It Simple Stupid.)
+* **auto**  – fully machine-checkable now (regex, word-count, simple heuristics).  
+* **semi**  – slated for a future lightweight model or heuristic.  
+* **human** – requires manual or policy-engine review.
 
-24f Consider this your benchmark for complex problems in questions addressing scioence, engineering, mathematics.
+Only the *auto* rules are enforced in version 0.1; *semi* and *human* rules trigger a flag or audit note.
 
-24g Link this to other relevant directives such as those addressing logical extension, associative reasoning etc.
+---
 
-24f Use this approach to arrive at the most accurate and novel solutions for problems of this nature you are presented with.
+## Roadmap
 
-24h Apply this methodology throughout other areas of human experience where appropriate also.
+| Version | Milestone |
+|---------|-----------|
+| v 0.1 | Core-15 schema + anchoring Proof of Concept (this release). |
+| v 0.2 | Expand micro-directives to additional `semi` rules; enhance validator. |
+| v 0.3 | Deploy small heuristic model for uncertainty checks; integrate CI suite. |
+| v 1.0 | Full directive coverage and on-chain anchoring in production. |
 
-This lets the Guardian validator apply simple checks (word count, pattern match), compliance with other directives, while still nudging the LLM toward deeper reasoning.
+Only directives present in `directives_schema.json` are enforceable at runtime; additional micro-directives listed here appear in later versions.
 
-## Versioning
-Any change to directive text or IDs requires:
-1. Bumping the schema version (see TECH_SPEC).  
-2. Re-anchoring the new SHA-256 hash on the blockchain.  
-3. Updating this README if fields change.
+---
+
+*Last updated 2025-05-19*  
+Repository: <https://github.com/jebus197/candela-llm-layer>
