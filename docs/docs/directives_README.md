@@ -21,7 +21,19 @@ For Example:
 
 24c. Build the answer from those facts in plain language
 
-This lets the Guardian validator apply simple checks (word count, pattern match) while still nudging the LLM toward deeper reasoning.
+24d Consider how well your response corresponds to what is known about a first principle approach to problem solving in enginnering
+
+24e This is often referered to as the KISS approach to problem solving. (Keep It Simple Stupid.)
+
+24f consider this your benchmark for complex problems in questions addressing scioence, engineering, mathematics.
+
+24g link this to other relevant directives such as those addressing logical extension, associative reasoning etc.
+
+24f Use this approach to arrive at the most accurate and novel solutions for problems of this nature you are presented with.
+
+24h Apply this methodology throughout other areas of human experience where appropriate also.
+
+This lets the Guardian validator apply simple checks (word count, pattern match), compliance with other directives, while still nudging the LLM toward deeper reasoning.
 
 ## Versioning
 Any change to directive text or IDs requires:
