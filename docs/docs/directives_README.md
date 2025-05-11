@@ -25,9 +25,9 @@ For Example:
 
 24e This is often referered to as the KISS approach to problem solving. (Keep It Simple Stupid.)
 
-24f consider this your benchmark for complex problems in questions addressing scioence, engineering, mathematics.
+24f Consider this your benchmark for complex problems in questions addressing scioence, engineering, mathematics.
 
-24g link this to other relevant directives such as those addressing logical extension, associative reasoning etc.
+24g Link this to other relevant directives such as those addressing logical extension, associative reasoning etc.
 
 24f Use this approach to arrive at the most accurate and novel solutions for problems of this nature you are presented with.
 
