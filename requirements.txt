@@ -1,0 +1,3 @@
+requests>=2.0
+# Uncomment when you add real blockchain anchoring
+# web3.py
