@@ -58,6 +58,10 @@ Q14: How does this project compare to existing efforts in LLM alignment or safet
 
 A14: Many existing efforts focus on aligning LLMs through further training (fine-tuning) or basic prompt engineering. While valuable, these methods can still be opaque and subject to model drift. This project complements those efforts by proposing an *external, verifiable system* that enforces a defined rule-set independent of the LLM's internal weights or training data. The use of blockchain anchoring for the rule-set's integrity adds a unique layer of transparency and auditability to the governance process itself.
 
-Q15: What are the next steps for the project?
+Q16: Isn’t CANDELA just “chain-of-thought” prompting with a new name?
 
-A15: The immediate next steps involve building the 'Guardian' software prototype, implementing the validation logic based on the directive schema, setting up the blockchain anchoring mechanism, and using this infrastructure to conduct rigorous empirical testing of the methodology's effectiveness in controlling LLM behaviour and improving reliability. Concurrently, we aim to disseminate the project's details through academic channels (e.g., arXiv preprints, workshop papers) and continue seeking collaboration.
+A16: Traditional chain-of-thought simply places reasoning steps inside each prompt; the model may or may not follow them, and there is no lasting record of what rules applied. CANDELA stores those steps once as micro-directives in a hashed JSON file, anchors that hash on a public blockchain, and runs an automatic validator after every reply. This means anyone can verify (a) which rules were in force before generation and (b) whether the model actually followed them, providing auditability and safety that plain chain-of-thought lacks.
+
+Q17: What are the next steps for the project?
+
+A17: The immediate next steps involve building the 'Guardian' software prototype, implementing the validation logic based on the directive schema, setting up the blockchain anchoring mechanism, and using this infrastructure to conduct rigorous empirical testing of the methodology's effectiveness in controlling LLM behaviour and improving reliability. Concurrently, we aim to disseminate the project's details through academic channels (e.g., arXiv preprints, workshop papers) and continue seeking collaboration.
