@@ -1,0 +1,17 @@
+# CANDELA Roadmap
+
+| Phase | Milestone | Target Date |
+|-------|-----------|-------------|
+| **0.1** | Prototype loads strict JSON and produces SHA-256 hash | ✓ 2025-05-12 |
+| **0.2** | Validation tiers implemented (auto/semi/human) | Jun 2025 |
+| **0.3** | Test-net anchoring of directive hash (Ethereum Sepolia) | Jul 2025 |
+| Semantic linking of First-Principles ⇄ Associative ⇄ Logical-Extension; optional recursive depth parameter.
+| **0.4** | Guardian Extended flags low-confidence answers | Aug 2025 |
+| **0.5** | Public beta + academic case study | Q4 2025 |
+| Milestone | Added features                                          | Directives needed                    |
+| --------- | ------------------------------------------------------- | ------------------------------------ |
+| **v0.2**  | “Must-include source” micro-directive & validator regex | Extend IDs 30-32                     |
+| **v0.3**  | Content-hash footer in every API response               | New ID 78 “Append HashFooter = true” |
+| **v0.4**  | Search-engine demo filtering for on-chain hashes        | No new directives; integration work  |
+| **v0.5**  | Browser plug-in colour-codes CANDELA-signed pages       | n/a                                  |
+
