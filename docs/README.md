@@ -2,75 +2,110 @@
 
 **Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 
+*Illuminate AI behaviour through verifiable, pre-execution rule anchoring.*
 
-Addressing the LLM "Black Box" & Reliability Challenge
+---
 
-A fundamental challenge in working with frontier Large Language Models (LLMs) is their inherent nature as probabilistic prediction engines. Unlike traditional software, LLMs do not execute explicit rules or logic programmatically. Their output is based on statistical patterns learned from vast training data, leading to well-documented issues such as hallucination, unpredictable drift from instructions, inconsistency, and a general lack of transparency in their reasoning process. This poses a significant hurdle for deploying LLMs in applications requiring high reliability, safety, and auditability.
+## The Challenge: Making AI Reliable and Transparent
 
-Note:
+Large Language Models (LLMs) are powerful tools, but they can be unpredictable. They might provide incorrect information ("hallucinate"), stray from initial instructions, or offer inconsistent answers. Because their internal reasoning is often a "black box," it's hard to trust them for critical tasks or understand *why* they produce a specific output. This lack of reliability and transparency is a major hurdle for the safe and widespread use of AI.
 
-➡ For a two-minute overview, see [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md)
+**CANDELA addresses this by introducing the Directive Guardian: an external, verifiable system that guides and constrains LLM behaviour.**
 
+➡ **For a two-minute overview, see our [Project Brief](docs/PROJECT_BRIEF.md).**
 
-This project tackles this challenge by introducing an external, verifiable system designed to guide and constrain LLM behaviour: the Directive Guardian. This architecture operates as middleware situated between the user/application layer and the core LLM API.
+---
 
-The Guardian system implements the following workflow:
+## How CANDELA Works: A Solution Overview
 
-    Directive Management & Verification: A core component loads a structured, human-readable directive set (defined in a schema, e.g., directives_schema.json ). This component performs cryptographic hashing (e.g., SHA-256) of the directives and verifies this hash against an immutable record anchored on a public blockchain. This ensures the integrity of the rule-set, confirming it has not been altered.   
+CANDELA uses a "Directive Guardian" – a smart software layer that sits between the user (or an application) and the LLM. Here’s the basic idea:
 
-Strategic Prompt Construction: User input is processed by the Guardian, which dynamically constructs the prompt sent to the LLM API. This involves incorporating the verified directives into the prompt context (e.g., via system messages or explicit in-line instructions) using advanced prompting techniques. This step aims to statistically bias the LLM's probabilistic output towards adherence to the directives.  
-Output Validation & Enforcement: Upon receiving the raw, probabilistically generated output from the LLM, the Guardian's crucial validation component analyses it against the loaded directive set. This involves programmed logic to check for contradictions, hallucinated confidence, non-adherence to behavioural rules (e.g., disclosure of uncertainty, avoiding flattery), and structural requirements. This logic is external to the LLM itself.  
-Action Handling: Based on the validation results, the Guardian determines the next step:
+1.  **Define the Rules (Directives):** We start with a clear, human-readable set of rules called "directives." These tell the LLM how it should behave (e.g., be truthful, disclose uncertainty, follow specific reasoning steps). For complex ideas, we break them down into smaller, testable "micro-directives." (Learn more in our [Directive Schema Guide](docs/directives_README.md)).
+2.  **Secure the Rules (Blockchain Anchoring):** Before the LLM even starts, the Guardian takes a digital fingerprint (a SHA-256 hash) of these directives and records it on a public blockchain. This ensures the rules are tamper-proof and auditable – everyone can see what rules were supposed to be in effect.
+3.  **Guide the LLM (Strategic Prompting):** The Guardian intelligently incorporates these verified directives into the instructions (prompts) given to the LLM. This "nudges" the LLM to produce responses that align with the rules.
+4.  **Check the Work (Output Validation):** After the LLM responds, the Guardian automatically checks the output against the specific micro-directives. This isn't about understanding like a human, but about programmed checks for compliance (e.g., did it include a confidence score? Did it follow the reasoning steps?).
+5.  **Enforce and Log (Action Handling):**
+    * If the output complies: It's passed to the user.
+    * If it violates a rule: The Guardian can flag the issue, ask the LLM to try again, or prevent the non-compliant output from being shown.
+    * (Optional) For a complete audit trail, a fingerprint of the entire interaction (input, directives, and output) can also be anchored on the blockchain.
 
-    If compliant: The output is passed to the user.
-    If non-compliant: The Guardian can intercept the output, flag the specific directive violation, log the event, and potentially instruct the LLM to regenerate a corrected response based on the identified rule breach.   
+This system transforms a potentially unreliable LLM into a more predictable and accountable tool by wrapping it in a verifiable governance framework.
 
-Auditable Logging (Optional): The system can log interaction details (input, directives used, validation results, final output), potentially hashing these logs and anchoring them on the blockchain to create a transparent and auditable record of the AI system's behaviour and rule adherence attempts.  
+---
+## Key Features
 
-This architecture addresses the LLM's inherent probabilistic nature by engineering an external framework that provides verifiable rule enforcement, transparency, and accountability. It transforms a potentially unreliable AI component into a more predictable and auditable system, without requiring fundamental changes to the LLM's core predictive mechanism. This approach, particularly the pre-execution anchoring of the behavioural rule-set, offers a novel angle  compared to systems that only anchor post-execution logs.
+* **Pre-Execution Rule Anchoring:** Ensures the integrity of behavioural rules *before* the LLM acts.
+* **Micro-Directives:** Makes complex reasoning concepts operational and testable. (See examples in [Extended Micro-Directive Templates](README.md#extended-micro-directive-templates-doc-only) below).
+* **Transparent & Auditable:** Human-readable rules and blockchain verification provide clear oversight.
+* **Modular & Model-Agnostic:** Designed to work as a layer on top of various LLMs.
+* **Creator-First Potential:** By anchoring content with its rule-set and potentially a creator's wallet, CANDELA could help ensure quality and enable fairer revenue models in the digital content ecosystem, combating "AI slop."
 
+---
+## Extended Micro-Directive Templates (Illustrative for Future Versions)
 
-## Extended Micro-Directive Templates (doc-only)
+To show how CANDELA can handle more complex reasoning, here are examples of how abstract directives can be broken down into verifiable steps. *(These richer versions are planned for future releases; the current prototype uses simplified versions for initial demonstration.)*
 
-The runtime schema uses 3-step versions for compact demos.  
-Below are richer 6-step templates we will adopt in v0.2+ for deeper traceability…
-
-Granular Associative-Reasoning (ID 14a-f) – doc-only example
-
+**Granular Associative-Reasoning (Example ID 14a-f)**
 
 | Sub-ID | Step                                          | Micro-Directive                                            | Auto-check             |
-| ------ | --------------------------------------------- | ---------------------------------------------------------- | ---------------------- |
-| 14a    | Surface concept                               | “**Related:** *<≤3 words>*”                                | line starts `Related:` |
-| 14b    | Type of link                                  | “**LinkType:** analogy / contrast / cause-effect / subset” | regex                  |
+| :----- | :-------------------------------------------- | :--------------------------------------------------------- | :--------------------- |
+| 14a    | Surface concept                               | "**Related:** *<≤3 words>*"                                | line starts `Related:` |
+| 14b    | Type of link                                  | "**LinkType:** analogy / contrast / cause-effect / subset" | regex                  |
 | 14c    | 1-sentence bridge (≤ 20 words)                | —                                                          | word-count             |
-| 14d    | Domain relevance tag (e.g., physics / ethics) | “**Domain:** …”                                            | whitelist              |
+| 14d    | Domain relevance tag (e.g., physics / ethics) | "**Domain:** …"                                            | whitelist              |
 | 14e    | Practical implication (≤ 30 words)            | —                                                          | word-count             |
-| 14f    | Confidence 0-1                                | “**Conf:** 0.00-1.00”                                      | float range            |
+| 14f    | Confidence 0-1                                | "**Conf:** 0.00-1.00"                                      | float range            |
 
-
-Granular First-Principles (ID 24a-f) – doc-only example
+**Granular First-Principles (Example ID 24a-f)**
 
 | Sub-ID | Step                             | Micro-Directive           | Auto-check     |
-| ------ | -------------------------------- | ------------------------- | -------------- |
+| :----- | :------------------------------- | :------------------------ | :------------- |
 | 24a    | Problem restatement (≤ 12 words) | —                         | word-count     |
-| 24b    | Fact 1                           | “• F1 … (≤ 10 words)”     | bullet + count |
-| 24c    | Fact 2                           | “• F2 … (≤ 10 words)”     | bullet + count |
-| 24d    | Hidden assumption? yes/no        | “**Assumption?:** yes/no” | yes/no         |
+| 24b    | Fact 1                           | "• F1 … (≤ 10 words)"     | bullet + count |
+| 24c    | Fact 2                           | "• F2 … (≤ 10 words)"     | bullet + count |
+| 24d    | Hidden assumption? yes/no        | "**Assumption?:** yes/no" | yes/no         |
 | 24e    | Derived principle (≤ 25 words)   | —                         | word-count     |
 | 24f    | Final answer (≤ 80 words)        | —                         | word-count     |
 
+---
+## Current Directive + I/O Fingerprints (Proof-of-Concept v0.1)
 
-## Current Directive + I/O Fingerprints
+| Item                   | SHA-256 Hash                                                     |
+| :------------------------- | :--------------------------------------------------------------- |
+| **Directive bundle** | `3cf5a9178cf726ed33ba0754fca66003ec469671a7cb799534052dccc6bddffa` |
+| **Session I/O** (example)| `e637b47f826fca642f8e7de6461a671f7ae70e64595af447d7b43f85f8fda086` |
 
-| Item                       | SHA-256 Hash |
-|----------------------------|------------------------------------------------------------------|
-| **Directive bundle**       | `3cf5a9178cf726ed33ba0754fca66003ec469671a7cb799534052dccc6bddffa` |
-| **Session I/O** (example)  | `e637b47f826fca642f8e7de6461a671f7ae70e64595af447d7b43f85f8fda086` |
+*Generated by `src/guardian_prototype.py` on 2025-05-12.*
+*Any change to `src/directives_schema.json` (or the LLM's response to a given prompt) will produce a different hash, ensuring full traceability.*
 
-Generated by `src/guardian_prototype.py` on **2025-05-12**.  
-Any change to `src/directives_schema.json` (or the response payload) will produce a different hash, ensuring full traceability.
+**Note:** For a commented, human-friendly version of the directive structure and micro-directive examples, see [`docs/example_directives_schema_annotated.jsonc`](docs/example_directives_schema_annotated.jsonc). The actual runtime schema (`src/directives_schema.json`) must remain strict, comment-free JSON for reliable parsing.
 
+---
+## Repository Structure
 
-Note:
+| Path                         | Purpose                                                 |
+| :--------------------------- | :------------------------------------------------------ |
+| `docs/`                      | Human-readable documents (Project Brief, FAQ, Diagrams) |
+| `src/guardian_prototype.py`  | Minimal runnable Proof-of-Concept (PoC)                 |
+| `src/guardian_extended.py`   | Richly commented workflow with anchoring template       |
+| `src/directives_schema.json` | Machine-readable directive list (v3.2, 76 items)        |
+| `requirements.txt`           | Python dependencies                                     |
+| `TECH_SPEC.md`               | Architecture overview & developer to-dos                |
+| `tests/`                     | (Placeholder for unit tests)                            |
 
-See examples/directives_schema_annotated.jsonc for a commented, reader-friendly version that demonstrates both the standard directive structure and the micro-directive structure of more complex prompts.; the runtime schema must remain comment-free for strict JSON execution.
+---
+## Quick Start
+
+```bash
+# 1. Clone the repository
+git clone [https://github.com/jebus197/CANDELA.git](https://github.com/jebus197/CANDELA.git)
+cd CANDELA
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run the minimal demo
+python src/guardian_prototype.py
+
+# Or run the extended flow (future blockchain anchoring)
+# python src/guardian_extended.py
