@@ -97,7 +97,7 @@ To show how CANDELA can handle more complex reasoning, here are examples of how 
 ## Quick Start
 
 ```bash
-# 1. Clone the repository
+# 1. Clone the repository:
 git clone [https://github.com/jebus197/CANDELA.git](https://github.com/jebus197/CANDELA.git)
 cd CANDELA
 
