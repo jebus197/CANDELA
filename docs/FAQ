@@ -70,3 +70,13 @@ A16: Traditional chain-of-thought simply places reasoning steps inside each prom
 Q17: What are the next steps for the project?
 
 A17: The immediate next steps involve building the 'Guardian' software prototype, implementing the validation logic based on the directive schema, setting up the blockchain anchoring mechanism, and using this infrastructure to conduct rigorous empirical testing of the methodology's effectiveness in controlling LLM behaviour and improving reliability. Concurrently, we aim to disseminate the project's details through academic channels (e.g., arXiv preprints, workshop papers) and continue seeking collaboration.
+
+Q18: ### 10. How can I get involved?
+
+A18:
+
+1. ⭐ Star the repo to follow updates.  
+2. File issues for bugs or directive suggestions.  
+3. Submit Pull Requests for code, tests, or documentation.  
+4. Join the upcoming Discord (link in README) for discussions.
+
