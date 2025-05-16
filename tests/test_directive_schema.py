@@ -1,3 +1,24 @@
+"""
+test_directive_schema.py
+------------------------
+
+Minimal smoke test for CANDELA Proof-of-Concept.
+
+Purpose:
+    - Ensures the core directives schema (src/directives_schema.json) is present, valid, non-empty, and unmodified.
+    - Computes and compares the schema’s SHA-256 hash against the documented canonical hash for v3.2 PoC.
+    - Catches accidental edits, corruption, or schema file removal.
+
+Rationale:
+    - In early-stage research/PoC code, this kind of test provides quick confidence that the foundational artifact (the directive set)
+      is exactly as intended for reproducible experimentation, even before full test infrastructure or CI is in place.
+
+Usage:
+    - Run with pytest from the repo root: `pytest tests/`
+    - This test is illustrative but functional and is intended as a template for future, more comprehensive tests.
+
+"""
+
 import json
 import hashlib
 from pathlib import Path
