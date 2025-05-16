@@ -1,95 +1,91 @@
-# CANDELA – Project Brief (v0.1)
+# CANDELA – Project Brief (v0.1.1 - May 2025)
+
+**CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 
 ## Elevator Pitch
 
-CANDELA adds a blockchain-anchored **Guardian layer** in front of any LLM.  
-It turns fragile prompt rules into verifiable, auditable governance.
-
-How CANDELA helps defend against “AI-slop” and the “dead-internet” problem
-
-| AI-slop symptom                                                                              | Why it happens                                                                                                                    | CANDELA counter-mechanism                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Flood of low-effort, copy-pasted content**<br>(no provenance, no incentives for originals) | Anyone can paste scraped text into an LLM and publish instantly; nothing ties outputs back to a stable rule-set or source ledger. | • **Immutable directive bundle** requires every generation to disclose a provenance hash.<br>• Planned **content-signature extension**: Guardian appends the SHA-256 of both the directive set *and* the model response → readers (or search engines) can filter for “signed-by-CANDELA” material only.<br>• Future v0.4 roadmap item: optional “original-source URL array” micro-directive that forces citation lines machine-checkable. |
-| **Bots citing hallucinated facts / no audit trail** 
-| LLMs compress context, drop sources, invent publishers.                                                                           
-| • Directive 3 (truthfulness & non-deception) + 10 (explicit uncertainty) + micro-directives (“Conf: 0-1”, “Source:”) give a *machine-verifiable* footprint.<br>• Guardian validator rejects any answer missing at least one source line → impossible to publish through a CANDELA-wrapped API without citations.                                                                                                                          |
-| **Search results full of SEO bait**                                                          
-| Ranking algorithms can’t distinguish handcrafted vs. auto-generated.                                                              
-| • Because every CANDELA response carries a public hash anchored on-chain, search engines could whitelist “hash-backed” pages, penalising anonymous slop.  (Proposal already logged in ROADMAP.md v0.4 “Search-engine plug-in”.)                                                                                                                                                                                                           |
-| **No incentives for human creators**                                                         | Traffic & ad revenue drop when summaries replace clicks.                                                                          | • CANDELA ledger can include **revenue-split metadata**: hash ⟶ original-author wallet.<br>• That makes it trivial for platforms to tip original writers automatically, restoring an economic loop.                                                                                                                                                                                                                                       |
-| **Users can’t detect bot vs human**                                                          | Content signatures aren’t standardised.                                                                                           | • A lightweight browser plug-in could query the CANDELA blockchain and turn the hash green (verified) or red (unsigned).  PoC planned for v0.5.                                                                                                                                                                                                                                                                                           |
-
-Why directives matter
-
-    Without the rule-set, Guardian would happily pass through any text and merely stamp a hash.
-
-    Directives force the model to expose premise / source / confidence so that low-effort slop fails the validator.
-
-Concrete next deliverables (slots into ROADMAP)
-
-| Milestone | Added feature                                           | Directives needed                    |
-| --------- | ------------------------------------------------------- | ------------------------------------ |
-| **v0.2**  | “Must-include source” micro-directive & validator regex | Extend IDs 30-32                     |
-| **v0.3**  | Content-hash footer in every API response               | New ID 78 “Append HashFooter = true” |
-| **v0.4**  | Search-engine demo filtering for on-chain hashes        | No new directives; integration work  |
-| **v0.5**  | Browser plug-in colour-codes CANDELA-signed pages       | n/a                                  |
-
-
-Why we don’t embed exhaustive decompositions now
-
-    Keeping first-principles & associative-reasoning at the 6-step level is enough to demonstrate machine-checkable depth.
-
-    Further “concept-link” decompositions will live in the v0.3 schema once we wire the validation-tier engine. That avoids bloating the POC while giving reviewers a clear path forward.
-
-
-
-## Problem & Vision
-LLMs can be steered by instructions, but those instructions are volatile and invisible to third parties.  
-CANDELA delivers an immutable directive bundle, rapid auto-validation, and a public hash so anyone can prove which rules were active.
-
-## Current Status (May 2025)
-- **Directive bundle**: 76 rules + 2 showcase micro-directive blocks  
-- **Prototype**: loads JSON, hashes bundle, displays hash  
-- **Docs**: README, tech spec, directive rationale, roadmap
-
-## Key Components
-1. **Guardian Prototype** – Python middleware (src/)  
-2. **Directive Schema** – strict JSON, machine-checkable  
-3. **Validation Tiers** – auto / semi / human (coming v0.2)  
-4. **Hash Anchoring** – Ethereum Sepolia test-net (planned v0.3)
-
-## Roadmap Snapshot
-| Milestone | Target |
-|-----------|--------|
-| Validation-tier engine | Jun 2025 |
-| Test-net anchoring demo | Jul 2025 |
-| Public beta & case study | Q4 2025 |
-
-## Quick Start
-```bash
-git clone https://github.com/your-org/CANDELA.git
-cd CANDELA
-pip install -r requirements.txt
-python3 src/guardian_prototype.py
-Contributing
-
-See the issues tab. We welcome PRs on:
-
-    Validation regexes / heuristic checks
-
-    Blockchain anchoring strategies
-
-    Additional micro-directive templates
+**CANDELA adds a blockchain-anchored "Directive Guardian" layer in front of any Large Language Model (LLM). It transforms often fragile LLM prompt rules and behavioral guidelines into a verifiable and auditable governance system.**
 
 ---
 
-### Next minimal steps
+## The Problem: Unreliable & Opaque AI
 
-1. Create `docs/PROJECT_BRIEF.md` with the template.  
-2. Link it in `README.md`.  
-3. Commit & push:
+Current Large Language Models (LLMs), while incredibly powerful, often exhibit unpredictable behavior. They can produce incorrect information ("hallucinate"), deviate from instructions ("drift"), and their internal decision-making processes are largely opaque ("black boxes"). This lack of inherent reliability and transparency poses significant risks, limiting their trustworthiness for critical applications and making true accountability difficult to achieve.
 
-```bash
-git add docs/PROJECT_BRIEF.md README.md
-git commit -m "Add concise Project Brief for onboarding"
-git push origin main
+## CANDELA's Solution: Verifiable Pre-Execution Governance
+
+CANDELA introduces the **"Directive Guardian,"** a middleware software component designed to sit between a user (or application) and an LLM. The Guardian enforces a predefined, human-readable set of behavioral and cognitive rules called the **"Directive Scaffold."**
+
+The core principles are:
+
+1.  **Defined Rule-Set:** The Directive Scaffold (currently 76 directives, including examples of "micro-directives" for complex concepts) is stored in a machine-readable JSON format (`src/directives_schema.json`).
+2.  **Integrity via Blockchain Anchoring:** Before the Guardian uses these directives, it calculates a unique cryptographic fingerprint (SHA-256 hash) of the entire directive set. This hash is then recorded ("anchored") on a public blockchain testnet (e.g., Polygon Mumbai or Ethereum Sepolia). This creates an immutable, publicly verifiable record of the exact rule-set that *should* be in force.
+3.  **Runtime Verification:** At the start of an interaction, the Guardian verifies the integrity of its local directive set by comparing its hash against the canonical hash retrieved from the blockchain.
+4.  **Guided LLM Output:** The Guardian strategically incorporates the verified directives into prompts sent to the LLM.
+5.  **Automated Validation:** The Guardian checks the LLM's responses against the requirements of the active directives (especially "auto" tier micro-directives in the current PoC).
+6.  **Accountability Loop:** The system enables an auditable trail from the enforced rules to the LLM's behavior, with options to also anchor hashes of interactions.
+
+---
+
+## Key Innovations & Benefits
+
+* **Pre-Execution Rule Verification:** Ensures the governing rule-set's integrity *before* the LLM generates output.
+* **Micro-Directives:** Decomposes complex abstract concepts (like "First-Principles Reasoning") into smaller, concrete, and more easily testable steps for the LLM and Guardian.
+* **Transparency & Auditability:** Human-readable directives coupled with blockchain-anchored verification provide unprecedented oversight.
+* **Enhanced LLM Reliability:** Aims to reduce hallucinations, instructional drift, and inconsistencies.
+* **Open & Model-Agnostic Potential:** Designed as an open-source (MIT licensed) middleware layer.
+* **Addressing "AI Slop" & Supporting Content Creators (Future Vision):** The framework's principles could be extended to verify human-generated content against defined standards, potentially combating low-quality "AI slop" and enabling fairer monetization for original creators.
+
+---
+
+## Current Status (v0.1 Proof-of-Concept - May 16, 2025)
+
+* **Core PoC Established:**
+    * The `src/guardian_poc_v0.1.py` script successfully demonstrates loading the `src/directives_schema.json` (v3.2, 76 directives), computing its SHA-256 hash, and simulating the core Guardian workflow with mock LLM calls and blockchain anchoring.
+    * **Successful Directive Bundle Hash Generation:**
+        * **Hash:** `3cf5a9178cf726ed33ba0754fca66003ec469671a7cb799534052dccc6bddffa`
+        * *(This hash for `directives_schema.json` v3.2 was generated by `src/guardian_poc_v0.1.py` on 2025-05-12 and documented in `First successful file hash.txt` and the main `README.md`)*.
+    * **Symbolic Manual Anchoring:** The above hash has been manually anchored on a public testnet as a v0.1 PoC step (details in `README.md`).
+* **Documentation Suite:** A comprehensive set of documents including `README.md`, this `PROJECT_BRIEF.md`, `FAQ.md`, `TECH_SPEC.md`, `ROADMAP.md`, and `directives_README.md` are available in the [CANDELA GitHub Repository](https://github.com/jebus197/CANDELA). * **OSF Preregistration & DOI:** Core documents are being registered on the Open Science Framework for a persistent citable DOI. ---
+
+## Key Components (v0.1 PoC)
+
+1.  **Directive Guardian (Software Concept):** Implemented as `src/guardian_poc_v0.1.py` (illustrative Python middleware).
+2.  **Directive Schema (`src/directives_schema.json`):** The v3.2 machine-readable rule list.
+3.  **Validation Tiers (Concept):** Directives are conceptually tiered ("auto," "semi," "human") for phased implementation of validation logic (detailed in `directives_README.md`). Current PoC focuses on illustrating the mechanism for "auto" tier checks.
+4.  **Blockchain Anchoring (PoC):** Mocked in script, with manual symbolic anchoring of the directive hash completed. Automated testnet anchoring is a v0.2/v0.3 goal.
+
+---
+
+## Roadmap Snapshot (See [ROADMAP.md](ROADMAP.md) for full details)
+
+| Version                   | Key Milestone                                                                                             | Target      |
+| :------------------------ | :-------------------------------------------------------------------------------------------------------- | :---------- |
+| **v0.2 (June-July 2025)** | Implement real LLM API calls. Guardian performs automated Testnet anchoring & verification of directive hash. Basic "auto" tier validation logic for select micro-directives. | Planned     |
+| **v0.3 (July-Aug 2025)** | Enhanced validation suite. Explore semantic linking of directives (PoC). Initial unit testing framework.        | Planned     |
+| **v0.4+ (Q4 2025 Onwards)** | Guardian flags low-confidence outputs. "Must-Cite" rule features. Public Beta. Academic Case Study.         | Planned     |
+
+---
+
+## How to Get Started & Contribute
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone [https://github.com/jebus197/CANDELA.git](https://github.com/jebus197/CANDELA.git) 
+    # Replace with your actual repo link
+    cd CANDELA
+    ```
+2.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **Run the Proof-of-Concept:**
+    ```bash
+    python3 src/guardian_poc_v0.1.py
+    ```
+    This will demonstrate the directive loading, hashing, and mock interaction flow.
+
+We welcome contributions! See our `TECH_SPEC.md` for developer to-dos, `ROADMAP.md` for future plans, and the [Issues Tab](https://github.com/jebus197/CANDELA/issues) on GitHub. ---
+
+*CANDELA – Illuminating AI governance through verifiable directives.*
+*Copyright (c) 2024-2025 George Jackson (CANDELA Project Lead). MIT Licensed.*

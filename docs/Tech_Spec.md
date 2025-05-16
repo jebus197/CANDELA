@@ -1,202 +1,180 @@
-# CANDELA – Technical Specification (v 0.1)
+# CANDELA – Technical Specification (v0.1.1 - May 2025)
 
-**Purpose**  
-Provide a middleware (**Directive Guardian**) that enforces and audits a machine‑readable directive set for any LLM, hashing both the rule‑set and each input/output bundle to a public blockchain for immutability and provenance.
+**CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 
----
-
-## 1 High‑Level Architecture
-
-User → **Guardian Middleware** → LLM API → **Guardian Validator** → Blockchain Anchor
-
-1. **Guardian Loader** — loads `directives_schema.json`, computes SHA‑256 hash, and confirms it matches the anchored reference.  
-2. **Prompt Builder** — prepends top‑level directives (IDs 1‑3) and any micro‑directives the validator will test.  
-3. **LLM Caller** — sends the prompt to an external LLM (OpenAI, Gemini, etc.).  
-4. **Validator** — runs directive‑specific checks on the LLM response.  
-5. **Anchor Service** — writes hashes of the directive bundle and the I/O bundle to the Polygon testnet (or another chain).
+**Purpose:**
+This document details the technical architecture, workflow, and implementation plan for the **CANDELA "Directive Guardian"** middleware. The Guardian is designed to enforce a machine-readable set of behavioral rules ("directives") on any Large Language Model (LLM). It achieves this by loading a verified directive set (whose integrity is confirmed against a blockchain-anchored hash), integrating directives into LLM prompts, validating LLM outputs against these rules, and using blockchain technology to optionally anchor hashes of interaction logs for immutability and provenance.
 
 ---
 
-## 2 Repository Structure
+## 1. High-Level Architecture
 
-| Path | Purpose |
-|------|---------|
-| `docs/` | Directive PDFs, FAQ, diagrams |
-| `src/guardian_prototype.py` | Minimal runnable PoC (≈ 200 LOC) |
-| `src/guardian_extended.py` | Richly commented flow with error handling & anchoring stub |
-| `src/directives_schema.json` | Machine‑readable directive list (v 3.2, 76 items) |
-| `requirements.txt` | Python dependencies (`requests`; `web3.py` optional) |
-| `TECH_SPEC.md` | *This* specification |
-| `tests/` | Placeholder for unit tests |
+The CANDELA system operates with the Directive Guardian as a central middleware component:
 
-> **Note:** all paths are relative to the repository root.
+**User/Application → Directive Guardian Middleware → LLM API → Directive Guardian Validator → (Optional) Blockchain Anchor for I/O**
 
----
+The key stages within the Guardian are:
 
-## 3 Dependencies & Setup
-
-```bash
-git clone https://github.com/yourname/candela-llm-layer.git
-cd candela-llm-layer
-pip install -r requirements.txt
-
-# Optional blockchain anchoring
-pip install web3
-export ANCHOR_PRIVATE_KEY="your-testnet-private-key"
-```
+1.  **Guardian Loader & Integrity Verification:**
+    * Loads the `src/directives_schema.json` file.
+    * Computes its SHA-256 hash.
+    * (MVP Goal) Queries a designated blockchain (e.g., Polygon Mumbai testnet) to retrieve the canonical anchored hash of the current official directive set.
+    * Compares the local hash with the blockchain hash. If mismatched, an integrity alert is raised, and operation with unverified directives is prevented.
+2.  **Prompt Builder:**
+    * Strategically prepends or integrates the (now verified) directives, or a relevant subset (especially micro-directives), into the user's prompt before sending it to the LLM.
+3.  **LLM Caller:**
+    * Securely sends the composed prompt to an external LLM API (e.g., OpenAI, Gemini, Anthropic).
+4.  **Output Validator:**
+    * Receives the LLM's raw response.
+    * Programmatically checks this response against the `validation_criteria` defined for applicable directives in the `directives_schema.json` (focusing on "auto" tier directives in early versions).
+    * Identifies and logs any compliance failures.
+5.  **Action Handler & (Optional) I/O Anchoring:**
+    * If validated, the response is passed to the user/application.
+    * If validation fails, the Guardian can initiate retries (with feedback to the LLM), flag errors, or block the response.
+    * Optionally, a hash of the complete interaction bundle (input, verified directives used, final LLM response, validation status) can be anchored on the blockchain for a full audit trail.
 
 ---
 
-## 4 Guardian Workflow (Extended Version)
+## 2. Repository Structure (Current PoC v0.1)
 
-| Step | Function | Implementation | Validation / Notes |
-|------|----------|----------------|--------------------|
-| 1 | Load directives & compute hash | `load_directives()` | Abort if hash mismatch |
-| 2 | Anchor directive hash | `blockchain_anchor(label="directives")` | Must return tx receipt |
-| 3 | Build prompt | `merge_prompt()` | Raises error if token budget exceeded |
-| 4 | Call LLM | `call_llm()` | Uses `OPENAI_API_KEY` |
-| 5 | Validate response | `validate_response()` | Returns list of issues |
-| 6 | Retry loop | `guardian_session()` | ≤ `MAX_RETRIES` |
-| 7 | Anchor I/O hash | `blockchain_anchor(label="io")` | Same chain as step 2 |
-
----
-
-## 5 Directive Validation Overview
-
-* **Concrete micro‑directives** (e.g., 6a‑c, 24a‑c) specify regex or structural checks.  
-* **Abstract directives** (e.g., #2 “Do no harm”) will require a policy engine or a human audit flag in a future release.  
-* Validation results are appended to the final JSON summary (`issues` field).
-
----
-
-## 6 File Descriptions
-
-### 6.1 `src/directives_schema.json`
-* Canonical machine‑readable source (IDs, text, notes, validation criteria).  
-* Any change here requires:  
-  1. Incrementing the semantic version (e.g., 0.1 → 0.2).  
-  2. Re‑anchoring the directive hash on‑chain.  
-  3. Updating the `README` and commit hash reference.
-
-### 6.2 `src/guardian_prototype.py`
-* ≤ 200 lines, standard‑library only.  
-* Demonstrates end‑to‑end flow with mock anchoring and a trivial validator.  
-* Good for smoke tests and CI.
-
-### 6.3 `src/guardian_extended.py`
-* Adds:  
-  - Error handling for missing file or token‑budget overflow.  
-  - Placeholder for real LLM call via `requests`.  
-  - Template Web3 anchoring (commented).  
-  - Rich debug prints.  
-* Intended starting point for contributors.
-
-### 6.4 `docs/FAQ.md`
-Explains project goals to non‑technical stakeholders and is linked from the `README`.
+| Path                                               | Purpose                                                                                       |
+| :------------------------------------------------- | :-------------------------------------------------------------------------------------------- |
+| `README.md`                                        | Main project overview, status, quick start, and links to other docs.                            |
+| `LICENSE`                                          | MIT License for the project.                                                                  |
+| `TECH_SPEC.md`                                     | *This document:* Detailed technical architecture, workflow, and developer to-do list.         |
+| `ROADMAP.md`                                       | Planned development phases and future milestones.                                             |
+| `docs/`                                            | Directory for human-readable documentation guides:                                            |
+| `docs/PROJECT_BRIEF.md`                            | A concise 2-minute overview of CANDELA.                                                       |
+| `docs/FAQ.md`                                      | Answers to Frequently Asked Questions.                                                        |
+| `docs/directives_README.md`                        | Explains the structure of the directive schema and the micro-directive strategy.                |
+| `docs/example_directives_schema_annotated.jsonc`   | A commented version of the schema with headings for easier human understanding (not for runtime). |
+| `src/`                                             | Directory for source code:                                                                    |
+| `src/directives_schema.json`                       | The machine-readable directive list (v3.2, 76 items, strict JSON format).                     |
+| `src/guardian_poc_v0.1.py`                         | The primary, more comprehensive Proof-of-Concept Python script for the Guardian.                |
+| `src/guardian_prototype.py`                        | An earlier, more minimal PoC script (kept for illustrative reference).                        |
+| `src/guardian_extended.py`                         | An earlier, more commented PoC script with stubs for extension (kept for illustrative reference). |
+| `requirements.txt`                                 | Python dependencies (currently `requests`, `web3.py` for future use).                         |
+| `tests/`                                           | (Placeholder for future unit tests for the Guardian software).                                |
+| `CITATION.cff`                                     | (To be added) Machine-readable citation information for the project.                        |
 
 ---
 
-## 7 Blockchain Anchoring Details
+## 3. Dependencies & Setup (for PoC `guardian_poc_v0.1.py`)
 
-### 7.1 Chain choice  
-Polygon Mumbai testnet is chosen for low fees and EVM compatibility. Production may migrate to Polygon mainnet, Hedera, or Filecoin.
-
-### 7.2 Contract‑less anchoring  
-Each anchor is a zero‑value transaction whose `data` field contains the SHA‑256 hash.
-
-* **Advantages**  
-  * Simplicity (no contract deployment)  
-  * Universal verification via any block explorer
-
-### 7.3 Anchor function (sample)
-
-```python
-from web3 import Web3
-import os
-
-def anchor_hash(hash_hex: str) -> str:
-    w3 = Web3(Web3.HTTPProvider(os.getenv("POLYGON_RPC")))
-    acct = w3.eth.account.from_key(os.getenv("ANCHOR_PRIVATE_KEY"))
-    tx = {
-        "to": "0x0000000000000000000000000000000000000000",
-        "value": 0,
-        "gas": 21_000,
-        "data": hash_hex.encode(),
-        "nonce": w3.eth.get_transaction_count(acct.address)
-    }
-    signed = acct.sign_transaction(tx)
-    tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-    return tx_hash.hex()
-```
-
-*Future work:* wrap this in a tiny REST micro‑service so Guardian scripts stay lightweight.
+* **Python:** Version 3.8+ recommended.
+* **Libraries:**
+    * `requests`: For making HTTP calls to LLM APIs (when real integration is implemented).
+    * `web3.py` (Optional for PoC, required for MVP blockchain interaction): For interacting with Ethereum-compatible blockchains like Polygon. Install via `pip install web3`.
+* **Setup:**
+    ```bash
+    git clone [https://github.com/jebus197/CANDELA.git](https://github.com/jebus197/CANDELA.git) 
+    # Replace with your actual repo link
+    cd CANDELA
+    pip install -r requirements.txt
+    ```
+* **Environment Variables (for future MVP development):**
+    * `YOUR_LLM_API_KEY_ENV_VARIABLE`: For the chosen LLM provider.
+    * `YOUR_BLOCKCHAIN_RPC_URL_ENV_VARIABLE`: RPC endpoint for the chosen testnet (e.g., Polygon Mumbai: `https://rpc-mumbai.maticvigil.com`, or Ethereum Sepolia).
+    * `ANCHOR_PRIVATE_KEY_ENV_VARIABLE`: Private key of the wallet used for anchoring transactions on the testnet (ensure this wallet is funded with testnet tokens).
 
 ---
 
-## 8 Environment Variables
+## 4. Guardian Workflow (Implemented in `guardian_poc_v0.1.py`)
 
-| Variable | Purpose |
-|----------|---------|
-| `OPENAI_API_KEY` | API key for real LLM call |
-| `POLYGON_RPC` | RPC endpoint (e.g., `https://rpc-mumbai.maticvigil.com`) |
-| `ANCHOR_PRIVATE_KEY` | Hot‑wallet key (testnet) |
-| `MAX_RETRIES` | Optional override for default retry count |
-
----
-
-## 9 Unit Testing Plan
-
-Framework: **pytest**
-
-| Test | Purpose |
-|------|---------|
-| Hash Integrity | Ensure schema hash equals anchored reference |
-| Prompt Merge | Assert top‑level directives are present |
-| Validator | Feed canned LLM outputs to validate directive pass/fail |
-| Retry Logic | Simulate banned‑word response; expect regenerate |
-
-The CI pipeline (GitHub Actions) will run tests on every pull request.
+| Step                                     | Function in `guardian_poc_v0.1.py` | PoC Status / Notes                                                                                                                               |
+| :--------------------------------------- | :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Load Directives & Compute Local Hash  | `_load_and_hash_directives()`      | Loads `src/directives_schema.json`, computes SHA-256. Includes basic error handling.                                                            |
+| 2. Verify Directive Set Integrity        | `_verify_directive_set_integrity()`| **CRITICAL STUB.** Currently simulates success if directives load. MVP: Must query blockchain for canonical hash & compare.                     |
+| 3. Anchor Verified Directive Bundle Hash | `_anchor_to_blockchain()`          | **MOCK.** Simulates anchoring `self.directive_bundle_hash`. MVP: Implement real testnet transaction.                                             |
+| 4. Construct LLM Prompt                  | `_construct_llm_prompt()`          | Prepends core directives (e.g., IDs 1-3) to user input. MVP: Needs more sophisticated directive selection & token management.                      |
+| 5. Call LLM API                          | `_call_llm_api()`                  | **MOCK.** Simulates LLM call, returns cycling responses. MVP: Implement real HTTP POST to LLM API.                                                 |
+| 6. Validate LLM Output                   | `_validate_llm_output()`           | **VERY BASIC POC.** Illustrative checks for "Confidence:" tag and one micro-directive structure. MVP: Implement checks for all "auto" tier directives. |
+| 7. Retry Loop for Validation             | Loop in `process_user_request()`   | Basic retry if validation issues found. MVP: Refine regeneration prompt.                                                                         |
+| 8. Anchor I/O Bundle Hash                | `_anchor_to_blockchain()`          | **MOCK.** Simulates anchoring hash of (prompt, response, issues, directive_hash). MVP: Implement real testnet transaction for audit trail.         |
 
 ---
 
-## 10 Developer To‑Do (v 0.1 tidy‑ups)
+## 5. Directive Validation Overview (Phased Approach)
 
-1. **Remove unused imports** in `guardian_prototype.py`.  
-2. **Real LLM integration**: implement `call_llm` HTTP POST; read API key from `OPENAI_API_KEY`.  
-3. **Validation expansion**: translate regex criteria for IDs 6a‑c, 24a‑c, 71‑73.  
-4. **Blockchain anchoring**: replace mock print with `anchor_hash()` using the Polygon testnet (directive hash and I/O hash).  
-5. **Unit tests**: add pytest scripts in `tests/`; ensure CI passes before merging.  
-6. **Documentation**: add an architecture diagram (PNG) to `docs/`; update `README` badge with latest commit hash and anchor TX link.
+Compliance with directives will be validated in tiers, as detailed in `docs/directives_README.md`:
 
----
+* **"auto" tier:** Rules with clear, objective `validation_criteria` (e.g., regex, word counts, presence of specific keywords/structures for micro-directives). Implementation of these is the focus for the early MVP (v0.2/v0.3).
+* **"semi" tier:** Rules requiring more complex heuristics or lightweight NLP models. Planned for later MVP stages.
+* **"human" tier:** Inherently subjective or highly nuanced ethical rules that will likely always require human oversight or integration with external policy engines. The Guardian may flag these for review.
 
-## 11 Versioning & Anchoring Policy
-
-| Event | Version bump | Action |
-|-------|--------------|--------|
-| Change to directive text / IDs | 0.1 → 0.2 (minor) | Recompute bundle hash; anchor; update docs |
-| Code refactor (no directive change) | 0.1 → 0.1.1 (patch) | No re‑anchor required |
-| New directive added | Minor bump | Update tests & docs; anchor new hash |
-| Breaking schema change | 1.x (major) | Migrate validation harness; anchor new hash |
+The `src/directives_schema.json` file includes a `validation_criteria` field for each directive, guiding the implementation of these checks.
 
 ---
 
-## 12 Security Considerations
+## 6. Blockchain Anchoring Details (Target: Polygon Mumbai or Ethereum Sepolia Testnet for MVP)
 
-* **Hot‑wallet risk** – keep only minimal MATIC in the testnet wallet.  
-* **Prompt injection** – future work: sandbox user input before merging.  
-* **API‑key leakage** – store credentials in GitHub repo secrets for CI.
-
----
-
-## 13 Governance Roadmap
-
-1. **Phase 1** – Maintainer‑led repository (current).  
-2. **Phase 2** – Community advisory group (Telegram/Discord).  
-3. **Phase 3** – DAO votes on directive updates; smart‑contract commit‑reveal scheme.
+* **What is Anchored:**
+    1.  The SHA-256 hash of the canonical `directives_schema.json` file.
+    2.  (Optionally for MVP, more robustly in later versions) The SHA-256 hash of an "I/O Bundle" (containing user input, relevant directives applied, final LLM response, and validation status) for each significant interaction.
+* **Mechanism (Contract-less for Simplicity in MVP):**
+    * Each hash will be embedded in the `data` field of a zero-value transaction sent on the chosen testnet.
+    * This creates a publicly verifiable, timestamped record without the need to deploy and maintain a custom smart contract initially.
+* **Verification:** The Guardian will query the blockchain (via an RPC URL) for the latest anchored directive hash to compare against its local version.
+* **Tools:** `web3.py` library for Python interaction with Ethereum-compatible chains.
 
 ---
 
-## 14 Contact
+## 7. Developer To-Do List (Towards MVP v0.2 - v0.3)
 
-Create issues on GitHub or e‑mail `<maintainer@example.com>`. A Discord link will be added once the community reaches 5 contributors.
+1.  **Real LLM Integration (High Priority):**
+    * Implement the `_call_llm_api()` function in `guardian_poc_v0.1.py` (or a new `guardian_mvp.py`) to make live calls to a chosen LLM API (e.g., OpenAI).
+    * Implement secure API key management (using environment variables).
+    * Implement robust error handling for API calls.
+2.  **Implement Directive Set Integrity Verification (High Priority):**
+    * Fully implement `_verify_directive_set_integrity()` to query the chosen testnet for the canonical directive bundle hash and compare it with the locally computed hash. Define clear actions for match/mismatch.
+3.  **Implement Automated Blockchain Anchoring (High Priority):**
+    * Fully implement `_anchor_to_blockchain()` to programmatically write:
+        * The verified `directive_bundle_hash` to the testnet.
+        * The `io_bundle_hash` to the testnet.
+4.  **Expand Validation Logic (Medium Priority for MVP Core):**
+    * Begin implementing the "auto" tier validation checks in `_validate_llm_output()` based on the `validation_criteria` in `directives_schema.json` for key micro-directives (e.g., IDs 6a-c, 14a-c, 24a-c) and critical monitoring directives (e.g., IDs 71-74).
+5.  **Unit Testing Framework (Medium Priority):**
+    * Set up `pytest` in the `tests/` folder.
+    * Write initial unit tests for: directive loading/hashing, core "auto" validation logic, and mock interactions for the blockchain functions.
+6.  **Refine Prompt Engineering (Medium Priority):**
+    * Experiment with different ways to structure and include directives in the LLM prompt for optimal adherence within token limits.
+7.  **Documentation Updates (Ongoing):**
+    * Add an architecture diagram (e.g., PNG) to the `docs/` folder and reference it.
+    * Update this `TECH_SPEC.md` and other documents as MVP features are implemented.
+    * Add `CITATION.cff` file to the repository root.
+
+---
+
+## 8. Versioning & Anchoring Policy
+
+| Event                                     | Version Bump Example | Action Required                                                                     |
+| :---------------------------------------- | :------------------- | :---------------------------------------------------------------------------------- |
+| Change to directive text, ID, or criteria | v0.1.x → v0.2.0      | Recompute directive bundle hash, anchor new hash on blockchain, update all docs.      |
+| Guardian code refactor (no directive change) | v0.1.1 → v0.1.2      | No re-anchoring of directive hash needed. Update software version.                   |
+| New directive added to schema             | v0.2.x → v0.3.0      | Update schema, tests, docs. Recompute bundle hash, anchor new hash.                 |
+| Breaking change to schema structure       | v0.x.x → v1.0.0      | Migrate validation harness, update all docs. Recompute bundle hash, anchor new hash. |
+
+*(This policy ensures that there's always a clear link between a software version, the directive set version it uses, and its corresponding on-chain anchored hash.)*
+
+---
+
+## 9. Security Considerations (Initial)
+
+* **API Key Management:** LLM API keys and blockchain private keys must be stored securely (e.g., environment variables, secrets management tools), never hardcoded.
+* **Blockchain Private Key Security:** The private key for the anchoring wallet must be kept secure. For PoC/MVP on testnet, risk is low, but good practices are essential.
+* **Prompt Injection:** While directives aim to constrain output, sophisticated prompt injection techniques against the LLM itself remain a general concern. The Guardian's output validation is a layer of defense.
+* **Data Privacy:** Ensure no sensitive user data is inadvertently included in hashes or logs anchored on a public blockchain. Hash only non-sensitive metadata or content fingerprints.
+
+---
+
+## 10. Governance Roadmap (Conceptual)
+
+1.  **Phase 1 (Current):** Maintainer-led (George Jackson).
+2.  **Phase 2 (Post-MVP):** Form a small community advisory group.
+3.  **Phase 3 (Longer-Term):** Explore a Decentralized Autonomous Organization (DAO) model for governing the canonical directive set and the CANDELA framework itself.
+
+---
+
+*This Technical Specification is a living document and will be updated as the CANDELA project evolves.*
+*Last Updated: May 16, 2025*
+*Repository: [https://github.com/jebus197/CANDELA](https://github.com/jebus197/CANDELA)* *Copyright (c) 2024-2025 George Jackson (CANDELA Project Lead). MIT Licensed.*
