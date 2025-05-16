@@ -50,7 +50,7 @@ CANDELA is a project developing a novel framework to enhance Large Language Mode
    - Update any configuration files as needed for your environment or blockchain anchoring requirements.
 
 4. **Run CANDELA:**
-   - Refer to the [documentation](./docs/README.md) for details on running the main modules and interacting with the directive scaffold.
+   - Refer to the [documentation](./README.md) for details on running the main modules and interacting with the directive scaffold.
 
 ## Documentation
 
@@ -62,7 +62,7 @@ We welcome contributions from the community! To get started, please read our [co
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+This project is licensed under the MIT License. See the ./LICENSE) file for details.
 
 ## Contact
 
