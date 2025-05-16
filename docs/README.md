@@ -112,7 +112,14 @@ Any change to the `src/directives_schema.json` file will result in a different h
 
 ---
 
+<<<<<<< HEAD
 ## Quick Start (Proof-of-Concept)
+=======
+```bash
+# 1. Clone the repository:
+git clone [https://github.com/jebus197/CANDELA.git](https://github.com/jebus197/CANDELA.git)
+cd CANDELA
+>>>>>>> 6cba964fecd9f1293d898cdfa3411bb415cadc00
 
 To run the current Proof-of-Concept and verify the directive bundle hash locally:
 
@@ -123,6 +130,7 @@ To run the current Proof-of-Concept and verify the directive bundle hash locally
     cd CANDELA
     ```
 
+<<<<<<< HEAD
 2.  **Install Dependencies** (currently only `requests` is listed, `web3.py` is commented out for future use):
     ```bash
     pip install -r requirements.txt
@@ -168,3 +176,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ---
 
 *CANDELA – Illuminating AI governance through verifiable directives.*
+=======
+# Or run the extended flow (future blockchain anchoring)
+# python src/guardian_extended.py
+>>>>>>> 6cba964fecd9f1293d898cdfa3411bb415cadc00
