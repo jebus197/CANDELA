@@ -13,8 +13,6 @@ Key features of CANDELA include:
 
 By bridging the gap between human oversight and machine intelligence, CANDELA sets a new standard for responsible AI development. Whether you are an AI researcher, developer, or an organization seeking robust governance over LLM behaviors, CANDELA provides the tools necessary to establish trust, transparency, and accountability in your AI deployments.
 
-Explore the rest of this README to learn how to get started, contribute, and engage with the CANDELA community.
-
 ---
 
 ## Project Overview
@@ -52,31 +50,23 @@ CANDELA is a project developing a novel framework to enhance Large Language Mode
    - Update any configuration files as needed for your environment or blockchain anchoring requirements.
 
 4. **Run CANDELA:**
-   - Refer to the documentation for running the main modules and interacting with the directive scaffold.
+   - Refer to the [documentation](./docs/README.md) for details on running the main modules and interacting with the directive scaffold.
 
 ## Documentation
 
-- Please refer to the [docs](./docs/) directory for detailed documentation, API references, and usage guides.
+- Please see the [docs folder](./docs/) for detailed documentation, API references, and usage guides.
 
 ## Contributing
 
-We welcome contributions from the community! To get started:
-
-1. Fork this repository.
-2. Create your feature branch (`git checkout -b feature/my-feature`).
-3. Commit your changes (`git commit -am 'Add some feature'`).
-4. Push to the branch (`git push origin feature/my-feature`).
-5. Open a pull request.
-
-For detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
+We welcome contributions from the community! To get started, please read our [contributing guidelines](./CONTRIBUTING.md).
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
 ## Contact
 
-For questions, issues, or suggestions, please open an [issue](https://github.com/jebus197/CANDELA/issues) or contact the maintainer directly.
+For questions, issues, or suggestions, please open an [issue](https://github.com/jebus197/CANDELA/issues) or contact the maintainer directly via GitHub.
 
 ---
 
