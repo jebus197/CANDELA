@@ -3,6 +3,10 @@
 **Proof-of-Concept Repository (v0.1)**  
 *Lead: George Jackson (jebus197), 2024-2025*
 
+
+→ New here? Read **[GETTING_STARTED.md](GETTING_STARTED.md)** for a 10-minute walkthrough.
+
+
 ---
 
 ## What is CANDELA?

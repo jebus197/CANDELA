@@ -47,6 +47,8 @@ The canonical directive schema (v3.2, PoC) is cryptographically anchored:
 This hash is checked by the test suite and referenced throughout the codebase and documentation.  
 To verify, use the included script in [`tests/test_directive_schema.py`](../tests/test_directive_schema.py).
 
+→ First-time testers: see **[GETTING_STARTED.md](GETTING_STARTED.md)** for a 10-minute walkthrough.
+
 ---
 
 ## Contributing and Contact
