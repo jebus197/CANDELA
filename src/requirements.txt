@@ -1,4 +1,7 @@
 # requirements.txt
 
 requests>=2.0
-# web3.py   # Uncomment and install when implementing real blockchain anchoring
+web3.py   # Uncomment and install when implementing real blockchain anchoring
+fastapi
+uvicorn
+pydantic
