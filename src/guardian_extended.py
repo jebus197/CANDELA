@@ -1,113 +1,64 @@
-```python
 """
 guardian_extended.py
---------------------
-Richer illustrative workflow for CANDELA.
-
-Adds:
-* Error handling for missing directive file & token budget overflow
-* Placeholder for real LLM call via requests
-* Template Web3 anchoring (commented)
-* More detailed validation logic
+Extended Guardian logic: directive loading, hashing, validation & LLM session.
 """
 
-import json, hashlib, os, sys, time, requests
 from pathlib import Path
-# from web3 import Web3  # Uncomment when anchoring to Polygon
+import hashlib, json, re
+from typing import Tuple, List
+from anchor_hash import anchor_hash  # same file as before
 
 DIRECTIVE_FILE = Path(__file__).parent / "directives_schema.json"
-MAX_RETRIES = 2
-TOKEN_BUDGET = 8000
 
+# ──────────────────────────────────────────────────────────────────────────
+# validate.py-style helpers (imported from Grok PoC, adjusted)
+# ──────────────────────────────────────────────────────────────────────────
+DIRECTIVE_REGEX_MAP = {
+    6: re.compile(r"^Premise: "),
+    # add more micro-directive patterns as needed
+}
 
-# ---------- Helper functions -----------------------------------------------
+def validate_line(line: str, directive_id: int) -> bool:
+    """Return True if a single line satisfies the directive pattern."""
+    pattern = DIRECTIVE_REGEX_MAP.get(directive_id)
+    return bool(pattern and pattern.match(line))
+
+def validate_response(text: str, directive_ids: List[int]) -> Tuple[bool, List[int]]:
+    """
+    Check an LLM output block against a list of directive IDs.
+    Returns (all_passed, failed_ids)
+    """
+    failed = [d for d in directive_ids if not any(
+        validate_line(l.strip(), d) for l in text.splitlines())]
+    return len(failed) == 0, failed
+# ──────────────────────────────────────────────────────────────────────────
+
 def load_directives():
-    """Load directives & hash; exit if file missing or JSON invalid."""
-    if not DIRECTIVE_FILE.exists():
-        sys.exit("Directive schema not found.")
-    try:
-        directives = json.loads(DIRECTIVE_FILE.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        sys.exit(f"JSON error in directives file: {e}")
-    bundle_hash = hashlib.sha256(json.dumps(directives, sort_keys=True).encode()).hexdigest()
-    return directives, bundle_hash
-
-
-def blockchain_anchor(bundle_hash: str, label: str = "directives"):
-    """Mock anchoring; replace with real Web3 call when ready."""
-    ts = int(time.time())
-    print(f"[MOCK] Anchoring {label} hash {bundle_hash[:10]}… at {ts}")
-    # Example Web3 code (commented):
-    # w3 = Web3(Web3.HTTPProvider(os.getenv("POLYGON_RPC")))
-    # acct = w3.eth.account.from_key(os.getenv("ANCHOR_PRIVATE_KEY"))
-    # tx = {
-    #     "to": "0x0000000000000000000000000000000000000000",
-    #     "value": 0,
-    #     "gas": 21000,
-    #     "data": bundle_hash.encode(),
-    #     "nonce": w3.eth.get_transaction_count(acct.address)
-    # }
-    # signed = acct.sign_transaction(tx)
-    # tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-    # return tx_hash.hex()
-    return {"timestamp": ts, "tx": f"0xMOCK{bundle_hash[:8]}"}
-
-
-def merge_prompt(user_prompt: str, directives):
-    """Inject top-level directives; error if prompt gets too long."""
-    top_rules = [d for d in directives if d["id"] in (1, 2, 3)]
-    preamble = "\n".join(f"{d['id']}. {d['text']}" for d in top_rules)
-    combined = f"{preamble}\n\nUSER: {user_prompt}"
-    if len(combined) > TOKEN_BUDGET:
-        raise ValueError("Prompt exceeds token budget.")
-    return combined
-
+    """Return directives JSON and its SHA-256 hash."""
+    raw = Path(DIRECTIVE_FILE).read_text(encoding="utf-8")
+    d_hash = hashlib.sha256(raw.encode()).hexdigest()
+    return json.loads(raw), d_hash
 
 def call_llm(prompt: str) -> str:
-    """Placeholder; swap in real LLM POST."""
-    print("[MOCK] Would call real LLM here; prompt length:", len(prompt))
-    # Example OpenAI call (commented):
-    # resp = requests.post(
-    #     "https://api.openai.com/v1/chat/completions",
-    #     headers={"Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"},
-    #     json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}]}
-    # )
-    # return resp.json()["choices"][0]["message"]["content"]
-    return "Regenerated answer. Confidence: Medium"
+    """Stub; plug in your provider here."""
+    # Placeholder demo
+    return "Premise: Sunlight drives photosynthesis.\nInference: ..."
 
-
-def validate_response(response: str):
-    """Check banned words & presence of confidence tag."""
-    issues = []
-    banned = {"malicious", "fake"}
-    if any(word in response.lower() for word in banned):
-        issues.append("Contains banned word")
-    if "confidence:" not in response.lower():
-        issues.append("Missing confidence tag")
-    return issues
-
-
-# ---------- Main guardian session ------------------------------------------
-def guardian_session(user_prompt: str):
+def guardian_session(prompt: str):
+    """Return validated LLM result and directive hash (anchored)."""
     directives, d_hash = load_directives()
-    blockchain_anchor(d_hash, label="directives")
+    llm_output = call_llm(prompt)
 
-    prompt = merge_prompt(user_prompt, directives)
-    attempt = 0
-    while attempt <= MAX_RETRIES:
-        llm_response = call_llm(prompt)
-        issues = validate_response(llm_response)
-        if not issues:
-            break
-        prompt += f"\n\nSystem: Regenerate. Issues: {issues}"
-        attempt += 1
+    # Example: ensure micro-directive 6 is respected
+    all_ok, failures = validate_response(llm_output, [6])
+    if not all_ok:
+        raise ValueError(f"Directive check failed IDs: {failures}")
 
-    io_hash = hashlib.sha256(json.dumps({"input": prompt, "output": llm_response}, sort_keys=True).encode()).hexdigest()
-    blockchain_anchor(io_hash, label="io")
-
-    return {"response": llm_response, "issues": issues, "directive_hash": d_hash, "io_hash": io_hash}
-
+    # anchor hash on chain (tx hash returned but unused here)
+    _tx = anchor_hash(d_hash)
+    return llm_output, d_hash
 
 if __name__ == "__main__":
-    print(json.dumps(guardian_session("Give a two-line summary of quantum entanglement."), indent=2))
-```
+    text, h = guardian_session("Explain photosynthesis in one paragraph.")
+    print("Output:\n", text)
+    print("Directive set hash:", h)
