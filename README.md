@@ -14,9 +14,8 @@ CANDELA (Compliant Auditable Natural-language Directive Enforcement & Ledger Anc
 
 At its heart, CANDELA introduces an external software framework called the "Directive Guardian." This system acts as a verifiable control layer that works with any LLM, rather 
 than attempting to alter the LLM's core architecture. The Guardian's role is to ensure that the LLM adheres to a clearly defined, human-readable, and machine-parsable set of 
-behavioral and cognitive rules known as the "Directive Scaffold."
-
-The core innovation of CANDELA lies in its approach to ensuring the integrity and consistent application of these rules:
+behavioral and cognitive rules known as the "Directive Scaffold." The core innovation of CANDELA lies in its approach to ensuring the integrity and consistent application of 
+these rules:
 
     Verifiable Rule-Set Integrity: Before any LLM interaction, the entire Directive Scaffold (stored as src/directives_schema.json) is given a unique cryptographic fingerprint 
     (a 
