@@ -2,6 +2,8 @@
 
 CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring
 
+[![DOI](https://img.shields.io/badge/DOI-10.17605%2FOSF.IO%2F3S7BT-blue.svg)](https://doi.org/10.17605/OSF.IO/3S7BT)
+
 Illuminating AI: An Introduction to CANDELA
 
 Large Language Models (LLMs) are rapidly transforming our digital landscape, offering remarkable capabilities in generating text, understanding queries, and even creating code. 

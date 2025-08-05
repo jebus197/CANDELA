@@ -3,8 +3,8 @@
 cff-version: 1.2.0
 type: software
 message: >
-  If you use or refer to the CANDELA project or its concepts in your
-  research, please cite it using the metadata from this file.
+  If you use or refer to the CANDELA project in your research,
+  please cite it using the metadata from this file.
 
 title: "CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring"
 version: "0.2.0"
@@ -16,14 +16,11 @@ authors:
   - family-names: Jackson
     given-names: George
     # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"
-    # affiliation: "Independent Researcher"
 
 abstract: >
-  CANDELA is an open-source framework and proof-of-concept that enhances the
-  reliability, transparency and auditability of large-language-model outputs.
-  A “Directive Guardian” middleware enforces a hash-anchored directive set
-  before each generation and validates outputs against it, mitigating
-  hallucination and instructional drift.
+  CANDELA is an open-source framework that enhances the transparency and
+  auditability of large-language-model outputs via directive enforcement
+  and blockchain anchoring.
 
 keywords:
   - artificial intelligence
@@ -31,9 +28,7 @@ keywords:
   - ai governance
   - blockchain
   - auditability
-  - directive-driven ai
   - responsible ai
-  - transparency
 
 license: MIT
 
