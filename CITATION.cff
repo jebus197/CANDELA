@@ -1,103 +1,45 @@
-# CITATION.cff
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
+# CITATION.cff — CANDELA v0.2.0 (released 2025-08-05)
 
 cff-version: 1.2.0
-title: 'CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring'
-message: >-
+type: software
+message: >
   If you use or refer to the CANDELA project or its concepts in your
   research, please cite it using the metadata from this file.
-type: software
+
+title: "CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring"
+version: "0.2.0"
+date-released: "2025-08-05"
+
+doi: 10.17605/OSF.IO/3S7BT
+
 authors:
   - family-names: Jackson
     given-names: George
-    # If you have an ORCID, add it here:
-    # orcid: 'https://orcid.org/XXXX-XXXX-XXXX-XXXX'
-    # You can also add affiliation if desired:
-    # affiliation: 'Independent Researcher' # Or 'CANDELA Project Lead'
-# Note: Add other core contributors here if/when they join the project.
-# Example:
-#  - family-names: Doe
-#    given-names: Jane
-#    orcid: 'https://orcid.org/YYYY-YYYY-YYYY-YYYY'
-#    affiliation: 'Some University/Organization'
+    # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"
+    # affiliation: "Independent Researcher"
 
-# Abstract: A brief description of the software.
-# The README.md provides a more detailed overview.
-abstract: >-
-  CANDELA is an open-source framework and Proof-of-Concept (PoC)
-  designed to enhance the reliability, transparency, and auditability
-  of Large Language Models (LLMs). It employs an external middleware
-  layer, the "Directive Guardian," which enforces a human-readable and
-  machine-parsable "Directive Scaffold" (a set of behavioral and
-  cognitive rules). The integrity of this directive set is ensured via
-  cryptographic hashing (SHA-256) and anchoring of the hash on a
-  public blockchain (testnet for PoC) *before* LLM generation. The
-  Guardian also validates LLM outputs against these verified
-  directives. The project aims to provide a verifiable governance layer
-  for LLMs, mitigating issues like hallucination and instructional
-  drift.
+abstract: >
+  CANDELA is an open-source framework and proof-of-concept that enhances the
+  reliability, transparency and auditability of large-language-model outputs.
+  A “Directive Guardian” middleware enforces a hash-anchored directive set
+  before each generation and validates outputs against it, mitigating
+  hallucination and instructional drift.
 
-# Keywords for discoverability
 keywords:
   - artificial intelligence
   - large language models
-  - llm
-  - ai safety
-  - ai ethics
   - ai governance
-  - ai alignment
   - blockchain
-  - verifiable ai
-  - auditable ai
-  - transparency
-  - natural language processing
-  - nlp
+  - auditability
   - directive-driven ai
-  - prompt engineering
   - responsible ai
+  - transparency
 
-# License for the project
 license: MIT
 
-# Commit hash for the version being cited (Update this for specific releases)
-# For v0.1, you can use the commit hash of your repository after adding all v0.1 files.
-# Example: commit: abc123def456
-# For now, you can leave it blank or point to the main branch,
-# but for specific citable versions, a commit hash is good.
-# commit: '' # Or a specific commit hash
-
-# Version of the software being cited
-version: 0.1.1 # Align with your Project Brief / TECH_SPEC / Roadmap versioning
-# (e.g., v0.1.1 after incorporating documentation updates based on this conversation)
-
-# Date of release for this version
-date-released: '2025-05-16' # Update with the actual date you finalize and push these v0.1.1 docs
-
-# DOI - Digital Object Identifier (Update this once you have it from OSF)
-# You can add multiple identifiers if needed
 identifiers:
   - type: doi
-    value: YOUR_OSF_PROJECT_DOI_HERE # Replace with actual DOI from OSF
-    description: Persistent Identifier for the CANDELA project documentation and core artifacts on OSF.
-  # Example for a software-specific DOI from Zenodo if you create one later:
-  # - type: doi
-  #   value: 10.5281/zenodo.XXXXXXX
-  #   description: Concept/Software DOI from Zenodo
+    value: 10.17605/OSF.IO/3S7BT
+    description: "Persistent OSF registration for CANDELA v0.2.0"
 
-# Repository URL
-repository-code: 'https://github.com/jebus197/CANDELA' # Ensure this is your correct repo URL
-
-# URL to the project's homepage or primary documentation (can be the same as repository-code)
-# url: 'https://github.com/jebus197/CANDELA'
-
-# Preferred citation text (optional, as tools will generate from metadata above)
-# preferred-citation:
-#   type: article # or conference-paper, generic, etc.
-#   authors:
-#     - family-names: Jackson
-#       given-names: George
-#   title: 'CANDELA: A Framework for Verifiable LLM Governance' # Example title for a paper
-#   journal: 'arXiv preprint arXiv:XXXX.XXXXX' # If you have an arXiv paper
-#   year: 2025
-#   doi: 'YOUR_OSF_PROJECT_DOI_HERE' # Or paper DOI
+repository-code: "https://github.com/jebus197/CANDELA"
