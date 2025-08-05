@@ -1,9 +1,11 @@
-# CITATION.cff
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
-
 cff-version: 1.2.0
-title: 'CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring'
+title: "CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring"
+doi: 10.17605/OSF.IO/3S7BT
+...
+identifiers:
+  - type: doi
+    value: 10.17605/OSF.IO/3S7BT
+    description: Persistent Identifier for the CANDELA project documentation and core artifacts on OSF.
 message: >-
   If you use or refer to the CANDELA project or its concepts in your
   research, please cite it using the metadata from this file.
@@ -100,4 +102,4 @@ repository-code: 'https://github.com/jebus197/CANDELA' # Ensure this is your cor
 #   title: 'CANDELA: A Framework for Verifiable LLM Governance' # Example title for a paper
 #   journal: 'arXiv preprint arXiv:XXXX.XXXXX' # If you have an arXiv paper
 #   year: 2025
-#   doi: 'YOUR_OSF_PROJECT_DOI_HERE' # Or paper DOI
+#   doi: value: 10.17605/OSF.IO/3S7BT
