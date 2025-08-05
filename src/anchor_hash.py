@@ -1,38 +1,78 @@
+#!/usr/bin/env python3
 """
 anchor_hash.py
-Loads directives → prints SHA-256 → (optionally) posts to Sepolia.
+Anchor the current SHA-256 of src/directives_schema.json to Ethereum Sepolia.
+
+• Reads the directives file
+• Computes SHA-256
+• Sends a 0-ETH transaction whose data field is that hash
+• Prints tx hash and waits for 1 confirmation
 """
 
-import json, hashlib, os, requests
+import os
+import json
+import time
 from pathlib import Path
 
-SCHEMA = Path("src/schema/directives_schema.json")
+from web3 import Web3, HTTPProvider
+from eth_account import Account
+from eth_account.messages import encode_defunct
+from dotenv import load_dotenv
 
-def main():
-    raw = SCHEMA.read_text(encoding="utf-8")
-    sha = hashlib.sha256(raw.encode()).hexdigest()
-    print(f"Directive SHA-256: {sha}")
+# --------------------------------------------------------------------------- #
+# 1. Environment / config                                                     #
+# --------------------------------------------------------------------------- #
 
-    # --- Optional broadcast (disabled by default) ---
-    if os.getenv("BROADCAST"):
-        wallet = os.getenv("WALLET_ADDR")
-        key    = os.getenv("PRIVATE_KEY")
-        if not (wallet and key):
-            print("Set WALLET_ADDR + PRIVATE_KEY env vars to broadcast.")
-            return
-        tx_hash = post_to_sepolia(wallet, key, sha)
-        print(f"Broadcast TXID: {tx_hash}")
+load_dotenv()                                                     # .env file
 
-def post_to_sepolia(addr: str, key: str, data: str) -> str:
-    # Minimal call via BlockPi
-    url = "https://ethereum-sepolia.blockpi.network/v1/rpc/public"
-    payload = {
-        "jsonrpc":"2.0","method":"eth_sendRawTransaction",
-        "params":[f"0x{data}"],"id":1
-    }
-    r = requests.post(url, json=payload, timeout=15)
-    r.raise_for_status()
-    return r.json()["result"]
+RPC_URL      = os.getenv("SEPOLIA_RPC_URL")                      # Alchemy URL
+PRIVATE_KEY  = os.getenv("PRIVATE_KEY")                          # MetaMask key
+DIR_FILE     = Path("src/directives_schema.json")                # Rule-set
 
-if __name__ == "__main__":
-    main()
+w3 = Web3(HTTPProvider(RPC_URL))
+acct = Account.from_key(PRIVATE_KEY)
+
+# --------------------------------------------------------------------------- #
+# 2. Compute SHA-256                                                          #
+# --------------------------------------------------------------------------- #
+
+digest = Web3.keccak(DIR_FILE.read_bytes()).hex()                # 0x-prefixed
+print("Directive SHA-256:", digest)
+
+# --------------------------------------------------------------------------- #
+# 3. Build & sign transaction                                                 #
+# --------------------------------------------------------------------------- #
+
+nonce   = w3.eth.get_transaction_count(acct.address)
+tx      = {
+    "to"      : acct.address,        # self-send 0 ETH
+    "value"   : 0,
+    "gas"     : 30_000,
+    "gasPrice": w3.to_wei("2", "gwei"),
+    "nonce"   : nonce,
+    "chainId" : 11155111,            # Sepolia
+    "data"    : digest               # embed the hash
+}
+
+signed = acct.sign_transaction(tx)
+tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)    # v6 attr
+
+print("⛓️  Sent tx:", tx_hash.hex())
+
+# --------------------------------------------------------------------------- #
+# 4. Wait 1 confirmation                                                      #
+# --------------------------------------------------------------------------- #
+
+print("⏳  Waiting for confirmation …")
+receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+print(f"✅  Confirmed in block {receipt.blockNumber}")
+
+# --------------------------------------------------------------------------- #
+# 5. Dump minimal anchor record (optional)                                    #
+# --------------------------------------------------------------------------- #
+
+ANCHOR_LOG = Path("docs/ANCHORS.md")
+entry = f"- `{digest}` → [{tx_hash.hex()}](https://sepolia.etherscan.io/tx/{tx_hash.hex()})\n"
+ANCHOR_LOG.touch(exist_ok=True)
+ANCHOR_LOG.write_text(entry, encoding="utf-8") if entry not in ANCHOR_LOG.read_text(encoding="utf-8") else None
+print("📄  Logged to docs/ANCHORS.md")
