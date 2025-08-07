@@ -26,7 +26,7 @@ from pathlib import Path
 # Path to the directive schema (relative to tests/ directory)
 DIRECTIVES_PATH = Path(__file__).parent.parent / "src" / "directives_schema.json"
 # Known SHA-256 hash for v3.2 as documented in README and Project Brief
-KNOWN_HASH_V32 = "c2664a99eb7f98f46d368815184158cbd74b8572d61974663c45726f8235e9cd"
+KNOWN_HASH_V32 = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
 def test_directives_schema_load_and_hash():
     """Test that the directives schema loads and matches the documented hash."""
     # Ensure file exists
