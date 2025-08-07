@@ -47,6 +47,57 @@ Key features of CANDELA include:
 By bridging the gap between human oversight and machine intelligence, CANDELA sets a new standard for responsible AI development. Whether you are an AI researcher, developer, or 
 an organization seeking robust governance over LLM behaviors, CANDELA provides the tools necessary to establish trust, transparency, and accountability in your AI deployments.
 
+---
+
+## 🛡️ From Rule-Checker to **Anti-Slop Quality-Token Engine**
+
+### The new digital pollution
+
+Large-language models can now spin out billions of words per day at near-zero cost.  
+That tsunami of low-effort, machine-generated text—call it **AI slop**—already clogs search results, poisons future model training, and crowds out human craft. Existing spam filters catch the worst abuses, but nothing yet **rewards** the opposite: painstaking, human-authored content that obeys rigorous reasoning, ethics, and transparency standards.
+
+### Why CANDELA is the missing piece
+
+CANDELA’s core insight is that every output can be **provably measured** against an immutable rule-set:
+
+* **Directive bundle** anchored on Ethereum Sepolia (SHA-256 `c2664a99…e9cd`, tx `0x0ca63893…d56c`).  
+* **Guardian** middleware that enforces those 70+ directives in real time.  
+* **Test suite + hash log** so any researcher can reproduce verdicts offline.
+
+That infrastructure is already live for pass/fail gating. The natural extension is to **flip the incentive**: pay creators for passing with flying colours, and penalise attempts to sneak in AI slop.
+
+### How the Quality-Token layer works
+
+1. **AI-Contamination Filter** - An ensemble of open-source detectors (stylometry burstiness, watermark scan, k-NN distance to LLM corpora). Any positive hit ⇒ hard fail.  
+2. **Guardian Quality Score** - Each directive category now carries a weight (see `config/guardian_scoring.yaml`). Score = 100 − Σ(weight × violations).  
+3. **Mint “Candela Quality Token” (CQT)** - If contamination = False *and* score ≥ 80, the Guardian verifier wallet mints `(score − 80)` tokens (capped 20) to the author.  
+4. **Stake & Slash** - Submitter locks 1 CQT per artefact. On failure the stake is burned, deterring mass spam. Subsequent audits can burn tokens retroactively if hidden slop surfaces.  
+5. **On-chain provenance** - The artefact’s SHA-256, Guardian report, and minted amount are logged in `docs/ANCHORS.md` and referenced by the mint transaction.
+
+Result: high-effort human work accrues tangible value; AI slop becomes economically self-defeating.
+
+### Implementation roadmap
+
+| Phase | Deliverable | Status |
+|-------|-------------|--------|
+| **P-0** | Scoring YAML + Guardian numeric output | ✅ committed |
+| **P-1** | AI-contamination plug-in interface (4 detectors) | ⚙ in progress |
+| **P-2** | `CandelaQualityToken.sol` (ERC-20 mint/burn) on Sepolia | scaffold committed |
+| **P-3** | `candela-claim` CLI — local verify → on-chain mint | scaffold committed |
+| **P-4** | Pilot cohort (10 essays) & public leaderboard | planned |
+| **P-5** | DAO / multisig for rule & treasury governance | planned |
+
+### Why this isn’t “just another badge”
+
+* **Cryptographic proof** — Anyone can run `sha256sum file`, replay Guardian, and match the on-chain record.  
+* **Adaptive filter** — Detectors are plug-ins; new AI watermarks or stylometry tricks drop straight into layer 1.  
+* **Positive-sum** — Writers earn tokens tied to demonstrable quality, not eyeball-time or clickbait.
+
+**Clone, test, and reproduce** every proof:  
+```bash
+git clone https://github.com/jebus197/CANDELA && cd CANDELA
+python3 -m pytest tests
+
 
 → New here? Read **[GETTING_STARTED.md](GETTING_STARTED.md)** for a 10-minute walkthrough.
 
@@ -63,6 +114,7 @@ CANDELA is a project developing a novel framework to enhance Large Language Mode
 - **Blockchain Anchoring:** All behavioral updates and directives are recorded on a blockchain, ensuring auditability and tamper-resistance.
 - **Transparency:** Every change is visible and verifiable, supporting open governance and trust.
 - **Python-Based:** 100% Python implementation for easy integration and extensibility.
+- Anti-AI-Slop Features. Roadmaps takes us to a condition where the same technology can be flipped to ensure high quality human-only-centric content, incorportating a token reward system for content that meets the defined on-chain directive anchorred standard.
 
 ## Getting Started
 
