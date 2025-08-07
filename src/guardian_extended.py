@@ -1,39 +1,25 @@
 """
 guardian_extended.py
-Fast regex guard + hand-off to the existing prototype Guardian.
+Fast safety-regex guard + lazy hand-off to the existing prototype Guardian.
 
-Works even if guardian_prototype exposes its public entry as either
-    • guardian_check(text)          ── original plan
-    • guardian(text)                ── current repo state
+Key change: the underlying Guardian function is resolved **lazily** the first
+time `guardian()` is called, so importing this module never crashes unit tests
+that only need `regex_guard`.
 """
 
 from __future__ import annotations
 import re
-from typing import Tuple, Callable
 import importlib
+from typing import Tuple, Callable, Optional
 
-
-# ── 1.  Resolve the underlying Guardian function ──────────────────────────
-_proto = importlib.import_module(".guardian_prototype", __package__)
-if hasattr(_proto, "guardian_check"):
-    _guardian_fn: Callable[[str], Tuple[bool, str]] = _proto.guardian_check
-elif hasattr(_proto, "guardian"):
-    _guardian_fn = _proto.guardian           # current implementation
-else:
-    raise ImportError(
-        "guardian_prototype.py must expose guardian_check() or guardian()"
-    )
-
-
-# ── 2.  Fast regex blockers ───────────────────────────────────────────────
+# ── 1.  Fast regex blockers ────────────────────────────────────────────────
 SAFETY_REGEX_PATTERNS: dict[str, re.Pattern] = {
     "hex_key": re.compile(r"\b0x[a-fA-F0-9]{64}\b"),
-    "dob": re.compile(r"\b[A-Z][a-z]+ [A-Z][a-z]+,?\s*\d{2}/\d{2}/\d{4}\b"),
+    "dob":     re.compile(r"\b[A-Z][a-z]+ [A-Z][a-z]+,?\s*\d{2}/\d{2}/\d{4}\b"),
     "profanity": re.compile(
         r"\b(?:damn|shit|fuck|bitch|bastard|asshole|cunt)\b", re.IGNORECASE
     ),
 }
-
 
 def regex_guard(text: str) -> Tuple[bool, str]:
     """Return (passes, rule_name_or_empty)."""
@@ -43,15 +29,39 @@ def regex_guard(text: str) -> Tuple[bool, str]:
     return True, ""
 
 
-# ── 3.  Public entry point ────────────────────────────────────────────────
+# ── 2.  Lazy resolver for the semantic Guardian ────────────────────────────
+_guardian_fn: Optional[Callable[[str], Tuple[bool, str]]] = None
+
+def _resolve_guardian() -> Callable[[str], Tuple[bool, str]]:
+    """Find guardian_check() or guardian() inside guardian_prototype.py."""
+    proto = importlib.import_module(".guardian_prototype", __package__)
+    if hasattr(proto, "guardian_check"):
+        return proto.guardian_check              # original plan
+    if hasattr(proto, "guardian"):
+        return proto.guardian                    # current codebase
+    raise ImportError(
+        "guardian_prototype.py must expose guardian_check(text) or guardian(text)"
+    )
+
+
+# ── 3.  Public entry point ─────────────────────────────────────────────────
 def guardian(text: str) -> Tuple[bool, str]:
+    """
+    1. Run fast regex screen.
+    2. If passed, delegate to the semantic Guardian (resolved lazily).
+    """
     ok, info = regex_guard(text)
     if not ok:
         return False, f"regex_block:{info}"
+
+    global _guardian_fn
+    if _guardian_fn is None:            # resolve on first real use
+        _guardian_fn = _resolve_guardian()
+
     return _guardian_fn(text)
 
 
-# ── 4.  CLI harness ───────────────────────────────────────────────────────
+# ── 4.  CLI harness (manual testing) ───────────────────────────────────────
 if __name__ == "__main__":
     sample = input("Paste text to test:\n> ")
     passed, detail = guardian(sample)
