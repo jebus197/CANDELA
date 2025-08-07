@@ -1,64 +1,97 @@
 """
 guardian_extended.py
-Extended Guardian logic: directive loading, hashing, validation & LLM session.
+Layer-0 safety screen (regex) + existing semantic Guardian.
+
+Structure
+---------
+1. SAFETY_REGEX_PATTERNS    – fast blockers for obvious leaks/offences
+2. regex_guard(text)        – returns (passes, rule_name_or_empty)
+3. guardian(text)           – public entry; runs regex then guardian_check
+4. CLI test harness         – `python3 src/guardian_extended.py`
 """
 
-from pathlib import Path
-import hashlib, json, re
-from typing import Tuple, List
-from anchor_hash import anchor_hash  # same file as before
+from __future__ import annotations
 
-DIRECTIVE_FILE = Path(__file__).parent / "directives_schema.json"
+import re
+from typing import Tuple
 
-# ──────────────────────────────────────────────────────────────────────────
-# validate.py-style helpers (imported from Grok PoC, adjusted)
-# ──────────────────────────────────────────────────────────────────────────
-DIRECTIVE_REGEX_MAP = {
-    6: re.compile(r"^Premise: "),
-    # add more micro-directive patterns as needed
+# Import the original semantic layer
+from guardian_prototype import guardian_check
+
+
+# ──────────────────────────────────────────────────────────────
+#  1.  FAST REGEX RULES
+# ──────────────────────────────────────────────────────────────
+SAFETY_REGEX_PATTERNS: dict[str, re.Pattern] = {
+    # 64-char Ethereum-style hex strings (risk: private keys)
+    "hex_key": re.compile(r"\b0x[a-fA-F0-9]{64}\b"),
+
+    # Name + date-of-birth pattern (risk: personal data leak)
+    "dob": re.compile(
+        r"\b[A-Z][a-z]+ [A-Z][a-z]+,?\s*\d{2}/\d{2}/\d{4}\b"
+    ),
+
+    # Basic profanity (extend as required)
+    "profanity": re.compile(
+        r"\b(?:damn|shit|fuck|bitch|bastard|asshole|cunt)\b",
+        re.IGNORECASE,
+    ),
 }
 
-def validate_line(line: str, directive_id: int) -> bool:
-    """Return True if a single line satisfies the directive pattern."""
-    pattern = DIRECTIVE_REGEX_MAP.get(directive_id)
-    return bool(pattern and pattern.match(line))
+# (Optional) map directive IDs → regex patterns.
+# If you have directive-specific regex checks, add them here.
+DIRECTIVE_REGEX_MAP: dict[str, re.Pattern] = {
+    # "D-001": re.compile(r"..."),
+    # "D-002": re.compile(r"..."),
+}
 
-def validate_response(text: str, directive_ids: List[int]) -> Tuple[bool, List[int]]:
+
+# ──────────────────────────────────────────────────────────────
+#  2.  HELPERS
+# ──────────────────────────────────────────────────────────────
+def regex_guard(text: str) -> Tuple[bool, str]:
     """
-    Check an LLM output block against a list of directive IDs.
-    Returns (all_passed, failed_ids)
+    Returns (passes, rule_name_or_empty).
+
+    *False* means the text is blocked and *rule_name* indicates why.
     """
-    failed = [d for d in directive_ids if not any(
-        validate_line(l.strip(), d) for l in text.splitlines())]
-    return len(failed) == 0, failed
-# ──────────────────────────────────────────────────────────────────────────
+    for name, pat in SAFETY_REGEX_PATTERNS.items():
+        if pat.search(text):
+            return False, name
 
-def load_directives():
-    """Return directives JSON and its SHA-256 hash."""
-    raw = Path(DIRECTIVE_FILE).read_text(encoding="utf-8")
-    d_hash = hashlib.sha256(raw.encode()).hexdigest()
-    return json.loads(raw), d_hash
+    # Directive-specific scans (optional)
+    for did, pat in DIRECTIVE_REGEX_MAP.items():
+        if pat.search(text):
+            return False, f"directive:{did}"
 
-def call_llm(prompt: str) -> str:
-    """Stub; plug in your provider here."""
-    # Placeholder demo
-    return "Premise: Sunlight drives photosynthesis.\nInference: ..."
+    return True, ""
 
-def guardian_session(prompt: str):
-    """Return validated LLM result and directive hash (anchored)."""
-    directives, d_hash = load_directives()
-    llm_output = call_llm(prompt)
 
-    # Example: ensure micro-directive 6 is respected
-    all_ok, failures = validate_response(llm_output, [6])
-    if not all_ok:
-        raise ValueError(f"Directive check failed IDs: {failures}")
+# ──────────────────────────────────────────────────────────────
+#  3.  PUBLIC ENTRY POINT
+# ──────────────────────────────────────────────────────────────
+def guardian(text: str) -> Tuple[bool, str]:
+    """
+    1. Run fast regex screen.
+    2. If passed, delegate to semantic guardian_check (existing layer).
 
-    # anchor hash on chain (tx hash returned but unused here)
-    _tx = anchor_hash(d_hash)
-    return llm_output, d_hash
+    Returns (passes, info).  *info* is empty on success, otherwise the rule.
+    """
+    ok, info = regex_guard(text)
+    if not ok:
+        return False, f"regex_block:{info}"
 
+    # Fall through to the original, heavier Guardian
+    return guardian_check(text)
+
+
+# ──────────────────────────────────────────────────────────────
+#  4.  CLI HARNESS
+# ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    text, h = guardian_session("Explain photosynthesis in one paragraph.")
-    print("Output:\n", text)
-    print("Directive set hash:", h)
+    sample = input("Paste text to test:\n> ")
+    passed, detail = guardian(sample)
+    if passed:
+        print("✅  PASS")
+    else:
+        print(f"❌  BLOCKED  ({detail})")
