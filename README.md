@@ -60,42 +60,59 @@ That infrastructure enables pass/fail gating. The next step is incentives: rewar
 
 ### Clone, test, reproduce
 
-```bash
+~~~bash
 git clone https://github.com/jebus197/CANDELA && cd CANDELA
 python3 -m pytest tests
-Project Overview
+~~~
 
-CANDELA develops a framework to enhance LLM reliability and transparency via a human-readable directive scaffold and blockchain anchoring for verifiable behavioural governance.
-Features
+New here? Read **[GETTING_Started.md](GETTING_Started.md)** for a 10-minute walkthrough.
 
-    Directive Scaffold: establish and enforce clear, human-readable rules for LLM behaviour.
+---
 
-    Blockchain Anchoring: record behavioural updates and directives on a blockchain for auditability and tamper-resistance.
+## Project Overview
 
-    Transparency: every change is visible and verifiable, supporting open governance and trust.
+CANDELA develops a framework to enhance LLM reliability and transparency via a human-readable directive scaffold and blockchain anchoring for verifiable **behavioural** governance.
 
-    Python-Based: 100% Python implementation for easy integration and extensibility.
+### Features
 
-Getting Started
+- **Directive Scaffold:** establish and enforce clear, human-readable rules for LLM **behaviour**.  
+- **Blockchain Anchoring:** record behavioural updates and directives on a blockchain for auditability and tamper-resistance.  
+- **Transparency:** every change is visible and verifiable, supporting open governance and trust.  
+- **Python-Based:** 100% Python implementation for easy integration and extensibility.
 
-    Clone the repository
+## Getting Started
+
+1. **Clone the repository**
+
+~~~bash
 git clone https://github.com/jebus197/CANDELA.git
 cd CANDELA
-Set up your environment
+~~~
 
-    Python 3.8+
+2. **Set up your environment**
 
-    (Optional) virtual environment:
+- Python 3.8+  
+- (Optional) virtual environment:
+
+~~~bash
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-Install dependencies:
+~~~
+
+- Install dependencies:
+
+~~~bash
 pip install -r requirements.txt
-Run CANDELA
+~~~
 
-    See the docs/ folder and the Quick-Start for details.
-Contributing
+3. **Run CANDELA**
 
-See CONTRIBUTING.md.
-Licence
+- See the [`docs/`](docs/) folder and the Quick-Start for details.
 
-MIT — see LICENSE.
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Licence
+
+MIT — see [`LICENSE`](LICENSE).
