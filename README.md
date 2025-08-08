@@ -1,4 +1,4 @@
-CANDELA
+*CANDELA
 
 Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring
 DOI: 10.17605/OSF.IO/3S7BT (https://doi.org/10.17605/OSF.IO/3S7BT)
