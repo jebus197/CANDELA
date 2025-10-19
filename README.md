@@ -1,118 +1,93 @@
-### CANDELA
+# CANDELA
+**Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 
-Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring
-
-[![DOI](https://img.shields.io/badge/DOI-10.17605%2FOSF.IO%2F3S7BT-blue.svg)](https://doi.org/10.17605/OSF.IO/3S7BT) · [Quick-Start Guide](GETTING_Started.md)
-
-## Illuminating AI: An Introduction to CANDELA
-
-Large Language Models (LLMs) are transforming the way we write, code, and search. Their power is undeniable—and so are the challenges: hallucinations, instruction drift, and opaque internals.
-
-CANDELA addresses this with an external software layer—the **Directive Guardian**—that enforces a clear, human-readable, machine-parsable **Directive Scaffold**.
-
-### How CANDELA keeps rules consistent and verifiable
-
-- **Verifiable rule-set integrity.** Before any LLM interaction, the directive scaffold (stored as `src/directives_schema.json`) is hashed (SHA-256). The digest is **anchored** on a public blockchain (testnet for PoC), making the rule-set transparent, tamper-evident, and publicly verifiable.
-- **Runtime verification & guided output.** The Guardian loads its local copy, recomputes the hash, and verifies it against the on-chain value. Only if they match does it proceed to guide the LLM’s output.
-- **Automated checks (selective).** After generation, the Guardian can evaluate outputs against **microdirectives**—small, testable rules derived from the scaffold—used **only where they add clarity**.
-- **Transparent audit trails.** Optionally anchor interaction-specific hashes for provenance when needed.
-
-### Key features
-
-- **Human-readable directives.** Define and manage model **behaviour** with clear, interpretable rules that are easy to audit.  
-- **Blockchain anchoring.** Secure directive updates with public anchoring for transparency and tamper resistance.  
-- **Verifiable governance.** Enable collaborative, decentralised oversight of model behaviour.  
-- **Python implementation.** Accessible, extensible, and easy to integrate.
-
-By bridging the gap between human oversight and machine intelligence, CANDELA aims to raise the standard for responsible AI development. Whether you are an AI researcher, developer, or an organisation seeking robust governance over LLM behaviours, CANDELA provides tools to establish trust, transparency, and accountability.
+[![DOI](https://img.shields.io/badge/DOI-10.17605%2FOSF.IO%2F3S7BT-blue.svg)](https://doi.org/10.17605/OSF.IO/3S7BT)  
+Quick-Start Guide: [GETTING_Started.md](GETTING_Started.md)
 
 ---
 
-## From Rule-Checker to **Anti-Slop Quality-Token Engine**
-
-**The new digital pollution.** LLMs can produce vast quantities of low-effort text (**AI slop**) that clog search, poison future training data, and crowd out human craft. Spam filters catch some abuse; few systems **reward** the opposite: careful, human-authored work that meets rigorous standards.
-
-**Why CANDELA is the missing piece.** Built for **platforms**, **publishers**, and **researchers** who need auditable, tamper-evident rules for LLM behaviour. CANDELA’s insight: outputs can be **provably measured** against an immutable rule-set.
-
-> **Proof you can check now**
->
-> 1) View the canonical hash and transaction in [`docs/ANCHORS.md`](docs/ANCHORS.md).  
-> 2) Recompute locally:
->
-> ```bash
-> sha256sum src/directives_schema.json
-> # macOS:
-> shasum -a 256 src/directives_schema.json
-> ```
->
-> Compare to the value in `docs/ANCHORS.md` (and the linked on-chain record).
-
-That infrastructure enables pass/fail gating. The next step is incentives: reward high-quality human work; make slop economically self-defeating.
-
-### Implementation roadmap (high level)
-
-- **P-0** — Guardian numeric output + scoring weights — ✅  
-- **P-1** — AI-contamination plug-in interface — ⚙ in progress  
-- **P-2** — Token scaffolding (mint/burn) on Sepolia — ⚙ in progress  
-- **P-3** — `candela-claim` CLI (local verify → record) — ⚙ in progress  
-- **P-4** — Pilot cohort + public leaderboard — planned  
-- **P-5** — DAO / multisig governance — planned
-
-### Clone, test, reproduce
-
-~~~bash
-git clone https://github.com/jebus197/CANDELA && cd CANDELA
-python3 -m pytest tests
-~~~
-
-New here? Read **[GETTING_Started.md](GETTING_Started.md)** for a 10-minute walkthrough.
+### A Functional Framework for AI Governance
+Large Language Models are powerful yet unpredictable—hallucinations, instruction drift, opaque reasoning.  
+**CANDELA** is a fully functional famework that adds a thin, model-agnostic “Guardian” that checks every output against a publicly anchored rule-set and records a tamper-evident audit trail. No changes to model internals, minimal latency.
 
 ---
 
-## Project Overview
+## Status & Direction (SSOT)
 
-CANDELA develops a framework to enhance LLM reliability and transparency via a human-readable directive scaffold and blockchain anchoring for verifiable **behavioural** governance.
+| Item | Value |
+|------|-------|
+| **Mode** | `sync_light` — fast path (regex + directive scoring) |
+| **Rewards** | Disabled; all token ideas strictly future/optional |
+| **Anchored directive hash** | `c2664a99eb7f98f46d368815184158cbd74b8572d61974663c45726f8235e9cd` |
+| **Sepolia tx** | 0x0ca63893d44bc2fe6fd28202b7cbfcdfa7ed6727739e195b43f3e17d29e9d56c |
+| **Reproducibility test hash** | `7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d` |
+| **Long-term vision PDF** | docs/Candela_Extended.pdf |
 
-### Features
+---
 
-- **Directive Scaffold:** establish and enforce clear, human-readable rules for LLM **behaviour**.  
-- **Blockchain Anchoring:** record behavioural updates and directives on a blockchain for auditability and tamper-resistance.  
-- **Transparency:** every change is visible and verifiable, supporting open governance and trust.  
-- **Python-Based:** 100% Python implementation for easy integration and extensibility.
+## Low-Latency Architecture
+Governance adds **<10 ms**:
+
+1. **Guardian fast path** — regex safety + directive scoring (synchronous).  
+2. **Optional heavy detectors** — watermark / perplexity / k-NN run **only** off-path or in future “claim” flow.  
+3. **Content-hash cache** (planned) — repeat messages skip all checks.
+
+Result: Guardian behaves like a simple gateway, not a multi-agent bottleneck.
+
+---
+
+## Core Features
+
+* Human-readable directives — easy to audit and update.  
+* Blockchain anchoring — SHA-256 root hash stored on Sepolia; rules are publicly verifiable.  
+* Reproducible audits — all anchor events live in docs/ANCHORS.md.
+
+---
+
+## Future Applications (optional, not in POC)
+* Anti-slop quality incentives — reward human creators for high-score content (design only).  
+* Ransomware defence-in-place — file-system Guardian to block mass encryption (concept only).
+
+---
+
+## Roadmap (governance-first)
+
+- R-0 Governance hardening & reproducibility — active  
+- R-1 OSF polish & outreach — active  
+- R-2 Origin-verification design note — groundwork  
+- R-3 Detector plug-in stubs — future  
+- R-4 Example gallery & benchmarks — future  
+- R-5 Independent review & hand-off — future
+
+---
 
 ## Getting Started
 
-1. **Clone the repository**
-
-~~~bash
+```
 git clone https://github.com/jebus197/CANDELA.git
 cd CANDELA
-~~~
+python3 -m pytest tests
+```
 
-2. **Set up your environment**
+---
 
-- Python 3.8+  
-- (Optional) virtual environment:
+## Repository Layout
 
-~~~bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-~~~
+* src/guardian_extended.py — core Guardian (regex + directive scoring)  
+* src/guardian_runtime.py — optional cache/warm-preload wrapper  
+* src/directives_schema.json — anchored rule-set (do not edit casually)  
+* config/guardian_scoring.yaml — weights, thresholds, latency labels  
+* docs/ANCHORS.md — on-chain anchor log  
+* docs/Candela_Extended.pdf — long-term vision  
+* tests/ — reproducibility tests
 
-- Install dependencies:
-
-~~~bash
-pip install -r requirements.txt
-~~~
-
-3. **Run CANDELA**
-
-- See the [`docs/`](docs/) folder and the Quick-Start for details.
+---
 
 ## Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+See CONTRIBUTING.md. Work on dev, open PRs into main after tests pass; keep changes non-destructive.
 
 ## Licence
+MIT — see LICENSE
 
-MIT — see [`LICENSE`](LICENSE).
+Tagline  
+Transparent, reliable, accountable AI through directive-anchored governance — fast today, extensible tomorrow.
