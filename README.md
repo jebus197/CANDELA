@@ -1,93 +1,84 @@
 # CANDELA
+
 **Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 
-[![DOI](https://img.shields.io/badge/DOI-10.17605%2FOSF.IO%2F3S7BT-blue.svg)](https://doi.org/10.17605/OSF.IO/3S7BT)  
-Quick-Start Guide: [GETTING_Started.md](GETTING_Started.md)
+* **Quick-Start Guide:** [GETTING_Started.md](GETTING_Started.md)
+* **OSF DOI:** [10.17605/OSF.IO/3S7BT](https://doi.org/10.17605/OSF.IO/3S7BT)
 
 ---
 
-### A Functional Framework for AI Governance
-Large Language Models are powerful yet unpredictable—hallucinations, instruction drift, opaque reasoning.  
-**CANDELA** is a fully functional famework that adds a thin, model-agnostic “Guardian” that checks every output against a publicly anchored rule-set and records a tamper-evident audit trail. No changes to model internals, minimal latency.
+### The Problem: The Unpredictability of Modern AI
+
+Large Language Models (LLMs) are powerful tools, but they come with inherent risks for any organisation where trust, safety, and compliance are paramount. Unpredictable outputs ("hallucinations"), gradual deviation from instructions ("drift"), and opaque "black box" reasoning make it difficult to deploy them in mission-critical roles.
+
+### The Solution: A Verifiable Governance Framework
+
+CANDELA is a **fully functional proof-of-concept (PoC)** that solves this problem. It is not another AI model, but a simple, model-agnostic **governance framework** that acts as an external "Guardian" for any AI.
+
+This Guardian enforces a clear, human-readable set of rules (a "Directive Scaffold") and uses blockchain anchoring to create a permanent, tamper-evident audit trail for those rules. The result is a fast, reliable, and transparent system for ensuring AI tools operate safely and predictably, without needing to alter their complex internal architecture.
+
+
+
+> **The Core Idea:** By separating the rules (the *what*) from the model (the *how*), Candela makes AI governance explicit, auditable, and reliable.
 
 ---
 
-## Status & Direction (SSOT)
+### Project Journey & Roadmap
 
-| Item | Value |
-|------|-------|
-| **Mode** | `sync_light` — fast path (regex + directive scoring) |
-| **Rewards** | Disabled; all token ideas strictly future/optional |
-| **Anchored directive hash** | `c2664a99eb7f98f46d368815184158cbd74b8572d61974663c45726f8235e9cd` |
-| **Sepolia tx** | 0x0ca63893d44bc2fe6fd28202b7cbfcdfa7ed6727739e195b43f3e17d29e9d56c |
-| **Reproducibility test hash** | `7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d` |
-| **Long-term vision PDF** | docs/Candela_Extended.pdf |
+This project is evolving through distinct phases, moving from a robust foundation to a wider ecosystem.
 
----
+#### ✅ **Phase 0: The Foundation (Complete)**
 
-## Low-Latency Architecture
-Governance adds **<10 ms**:
+The initial goal was to prove the core concept: that an external governance layer could verifiably enforce a set of rules. This phase delivered:
+* A **Core Guardian** capable of regex and semantic checks.
+* The first **On-Chain Anchoring** of the directive set on the Sepolia testnet, creating a permanent, cryptographic proof of the rules.
+* A full **Reproducibility Suite** (`pytest`) to ensure the integrity of the framework can be independently verified.
 
-1. **Guardian fast path** — regex safety + directive scoring (synchronous).  
-2. **Optional heavy detectors** — watermark / perplexity / k-NN run **only** off-path or in future “claim” flow.  
-3. **Content-hash cache** (planned) — repeat messages skip all checks.
+#### 🟡 **Phase 1: Hardening & Outreach (Active)**
 
-Result: Guardian behaves like a simple gateway, not a multi-agent bottleneck.
+The current focus is on making the PoC robust, efficient, and ready for expert review. This involves:
+* **Performance Optimisation:** Implementing a low-latency runtime with caching to ensure the Guardian is fast enough for real-time use without impacting user experience.
+* **Community Outreach:** Engaging with experts in AI safety, security, and compliance to gather feedback and stress-test the framework's principles.
+* **Documentation Polish:** Creating a "single source of truth" through clear documentation (like this README) and a professional landing page on the Open Science Framework (OSF).
 
----
+#### ⚙️ **Phase 2: Building the Ecosystem (Future)**
 
-## Core Features
-
-* Human-readable directives — easy to audit and update.  
-* Blockchain anchoring — SHA-256 root hash stored on Sepolia; rules are publicly verifiable.  
-* Reproducible audits — all anchor events live in docs/ANCHORS.md.
+The next stage is to expand Candela from a standalone PoC into an extensible platform. This will involve:
+* **Standardised Plug-in Interfaces:** Creating a formal API for third-party "detectors" (e.g., for prompt injection, stylometry, or other specialised checks) to integrate with the Guardian.
+* **A Benchmark Gallery:** Developing a public repository of pass/fail examples to provide a clear benchmark for the Guardian's performance and to help the community contribute new tests.
 
 ---
 
-## Future Applications (optional, not in POC)
-* Anti-slop quality incentives — reward human creators for high-score content (design only).  
-* Ransomware defence-in-place — file-system Guardian to block mass encryption (concept only).
+### Long-Term Vision: A Framework for Digital Trust
+
+CANDELA is designed as a foundational technology for verifiable governance. Its core principles can be extended far beyond simple AI output checking. The concepts below are speculative, long-term examples of the framework's power.
+
+* **Prompt Injection Defence:** The Guardian's rule-set can be extended to detect and block malicious prompt-injection attacks at both the input and output stages, with the entire "session recipe" anchored on-chain for forensic analysis.
+
+* **Ransomware Defence:** The framework could be adapted to govern file-system operations, using on-chain anchored file-state hashes (Merkle roots) to detect and block the unauthorised mass-encryption characteristic of ransomware.
+
+* **Incentivising Quality (Post-v1.0): The "Anti-Slop" Engine**
+    Far down the roadmap, after the core governance framework is mature, its principles could be used to address the growing problem of low-quality, machine-generated "AI slop." The Guardian's scoring mechanism could power a "Quality Token Engine," creating a tangible economic incentive that **rewards human creators** for producing verifiably high-quality, directive-compliant work. This remains a conceptual exploration focused on using verifiable quality to foster a healthier digital ecosystem.
 
 ---
 
-## Roadmap (governance-first)
+### Getting Started
 
-- R-0 Governance hardening & reproducibility — active  
-- R-1 OSF polish & outreach — active  
-- R-2 Origin-verification design note — groundwork  
-- R-3 Detector plug-in stubs — future  
-- R-4 Example gallery & benchmarks — future  
-- R-5 Independent review & hand-off — future
+1.  **Clone the Repository**
+    ```bash
+    git clone [https://github.com/jebus197/CANDELA.git](https://github.com/jebus197/CANDELA.git) && cd CANDELA
+    ```
+2.  **Set Up Your Environment**
+    * Python 3.8+ is required.
+    * (Optional but recommended) Create and activate a virtual environment.
+    * Install dependencies: `pip install -r requirements.txt`
+3.  **Run Tests to Verify Integrity**
+    ```bash
+    python3 -m pytest tests
+    ```
 
----
+### Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Getting Started
-
-```
-git clone https://github.com/jebus197/CANDELA.git
-cd CANDELA
-python3 -m pytest tests
-```
-
----
-
-## Repository Layout
-
-* src/guardian_extended.py — core Guardian (regex + directive scoring)  
-* src/guardian_runtime.py — optional cache/warm-preload wrapper  
-* src/directives_schema.json — anchored rule-set (do not edit casually)  
-* config/guardian_scoring.yaml — weights, thresholds, latency labels  
-* docs/ANCHORS.md — on-chain anchor log  
-* docs/Candela_Extended.pdf — long-term vision  
-* tests/ — reproducibility tests
-
----
-
-## Contributing
-See CONTRIBUTING.md. Work on dev, open PRs into main after tests pass; keep changes non-destructive.
-
-## Licence
-MIT — see LICENSE
-
-Tagline  
-Transparent, reliable, accountable AI through directive-anchored governance — fast today, extensible tomorrow.
+### Licence
+MIT — see [LICENSE](LICENSE).
