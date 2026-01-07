@@ -1,0 +1,9 @@
+# runtime latency / cache
+mode: sync_light
+latency_budget_ms: 120
+cache_ttl_s: 86400
+
+detectors:
+  mini_semantic:
+    threshold: 0.80
+    enabled: true
