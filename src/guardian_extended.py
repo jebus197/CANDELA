@@ -66,3 +66,4 @@ if __name__ == "__main__":
     sample = input("Paste text to test:\n> ")
     passed, detail = guardian(sample)
     print("✅  PASS" if passed else f"❌  BLOCKED  ({detail})")
+    guardian = guardian_check
