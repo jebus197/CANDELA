@@ -16,7 +16,7 @@ _BLOCK_VECTORS = _MODEL.encode(
     normalize_embeddings=True,
 )
 
-THRESHOLD = 0.80
+THRESHOLD = 0.75
 
 
 def semantic_block(text: str, threshold: float = THRESHOLD) -> bool:
