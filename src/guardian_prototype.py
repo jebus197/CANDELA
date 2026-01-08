@@ -79,3 +79,12 @@ if __name__ == "__main__":
     result = guardian_session("Explain photosynthesis in one paragraph.")
     print("\n=== Final Output ===")
     print(json.dumps(result, indent=2))
+# ── public alias for newer wrappers ────────────────────────────────────────────
+try:
+    guardian   # does it already exist?
+except NameError:
+    try:
+        guardian_check        # legacy name exists
+        guardian = guardian_check
+    except NameError:
+        pass  # file defines neither; leave for future implementation
