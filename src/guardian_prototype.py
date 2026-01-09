@@ -1,5 +1,6 @@
 """
 guardian_prototype.py
+---------------------
 Minimal runnable proof-of-concept for CANDELA.
 
 Flow:
@@ -11,11 +12,11 @@ Flow:
 6. Anchor input/output hash (mock)
 """
 
-import json, hashlib, time, sys
+import json, hashlib, time, os, sys
 from pathlib import Path
 
 DIRECTIVE_FILE = Path(__file__).parent / "directives_schema.json"
-MAX_RETRIES    = 2
+MAX_RETRIES = 2
 
 
 # ---------- Helper functions ------------------------------------------------
@@ -25,9 +26,7 @@ def load_directives():
         directives = json.loads(Path(DIRECTIVE_FILE).read_text(encoding="utf-8"))
     except FileNotFoundError:
         sys.exit("Directive schema not found.")
-    bundle_hash = hashlib.sha256(
-        json.dumps(directives, sort_keys=True).encode()
-    ).hexdigest()
+    bundle_hash = hashlib.sha256(json.dumps(directives, sort_keys=True).encode()).hexdigest()
     return directives, bundle_hash
 
 
@@ -40,7 +39,7 @@ def blockchain_anchor(bundle_hash: str, label: str = "directives"):
 
 def merge_prompt(user_prompt: str, directives):
     top_rules = [d for d in directives if d["id"] in (1, 2, 3)]
-    preamble  = "\n".join(f"{d['id']}. {d['text']}" for d in top_rules)
+    preamble = "\n".join(f"{d['id']}. {d['text']}" for d in top_rules)
     return f"{preamble}\n\nUSER: {user_prompt}"
 
 
@@ -60,40 +59,22 @@ def guardian_session(user_prompt: str):
     directives, d_hash = load_directives()
     blockchain_anchor(d_hash, label="directives")
 
-    prompt  = merge_prompt(user_prompt, directives)
+    prompt = merge_prompt(user_prompt, directives)
     attempt = 0
     while attempt <= MAX_RETRIES:
         llm_response = call_llm(prompt)
-        issues       = validate_response(llm_response)
+        issues = validate_response(llm_response)
         if not issues:
             break
         prompt += f"\n\nSystem: Regenerate. Issues detected: {issues}"
         attempt += 1
 
-    io_hash = hashlib.sha256(
-        json.dumps({"input": prompt, "output": llm_response},
-                   sort_keys=True).encode()
-    ).hexdigest()
+    io_hash = hashlib.sha256(json.dumps({"input": prompt, "output": llm_response}, sort_keys=True).encode()).hexdigest()
     blockchain_anchor(io_hash, label="io")
 
-    return {
-        "response":        llm_response,
-        "issues":          issues,
-        "directive_hash":  d_hash,
-        "io_hash":         io_hash,
-    }
+    return {"response": llm_response, "issues": issues, "directive_hash": d_hash, "io_hash": io_hash}
 
 
-# ---------- Compatibility wrappers for newer runtime ------------------------
-def guardian_check(text: str) -> dict:      # legacy name expected by wrappers
-    """Thin shim that forwards to guardian_session."""
-    return guardian_session(text)
-
-
-guardian = guardian_check                   # modern alias
-
-
-# ---------- CLI test --------------------------------------------------------
 if __name__ == "__main__":
     result = guardian_session("Explain photosynthesis in one paragraph.")
     print("\n=== Final Output ===")
