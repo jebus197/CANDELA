@@ -4,35 +4,35 @@
 
 ## Elevator Pitch
 
-**CANDELA adds a blockchain-anchored "Directive Guardian" layer in front of any Large Language Model (LLM). It transforms often fragile LLM prompt rules and behavioral guidelines into a verifiable and auditable governance system.**
+**CANDELA adds a blockchain-anchored "Directive Guardian" layer in front of any model endpoint (e.g., an LLM). It transforms often fragile prompt rules and behavioral guidelines into a verifiable and auditable governance system.**
 
 ---
 
 ## The Problem: Unreliable & Opaque AI
 
-Current Large Language Models (LLMs), while incredibly powerful, often exhibit unpredictable behavior. They can produce incorrect information ("hallucinate"), deviate from instructions ("drift"), and their internal decision-making processes are largely opaque ("black boxes"). This lack of inherent reliability and transparency poses significant risks, limiting their trustworthiness for critical applications and making true accountability difficult to achieve.
+Current AI models (including LLMs), while incredibly powerful, often exhibit unpredictable behavior. They can produce incorrect information ("hallucinate"), deviate from instructions ("drift"), and their internal decision-making processes are largely opaque ("black boxes"). This lack of inherent reliability and transparency poses significant risks, limiting their trustworthiness for critical applications and making true accountability difficult to achieve.
 
 ## CANDELA's Solution: Verifiable Pre-Execution Governance
 
-CANDELA introduces the **"Directive Guardian,"** a middleware software component designed to sit between a user (or application) and an LLM. The Guardian enforces a predefined, human-readable set of behavioral and cognitive rules called the **"Directive Scaffold."**
+CANDELA introduces the **"Directive Guardian,"** a middleware software component designed to sit between a user (or application) and a model endpoint. The Guardian enforces a predefined, human-readable set of behavioral and cognitive rules called the **"Directive Scaffold."**
 
 The core principles are:
 
 1.  **Defined Rule-Set:** The Directive Scaffold (currently 76 directives, including examples of "micro-directives" for complex concepts) is stored in a machine-readable JSON format (`src/directives_schema.json`).
 2.  **Integrity via Blockchain Anchoring:** Before the Guardian uses these directives, it calculates a unique cryptographic fingerprint (SHA-256 hash) of the entire directive set. This hash is then recorded ("anchored") on a public blockchain testnet (e.g., Polygon Mumbai or Ethereum Sepolia). This creates an immutable, publicly verifiable record of the exact rule-set that *should* be in force.
 3.  **Runtime Verification:** At the start of an interaction, the Guardian verifies the integrity of its local directive set by comparing its hash against the canonical hash retrieved from the blockchain.
-4.  **Guided LLM Output:** The Guardian strategically incorporates the verified directives into prompts sent to the LLM.
-5.  **Automated Validation:** The Guardian checks the LLM's responses against the requirements of the active directives (especially "auto" tier micro-directives in the current PoC).
-6.  **Accountability Loop:** The system enables an auditable trail from the enforced rules to the LLM's behavior, with options to also anchor hashes of interactions.
+4.  **Guided Model Output:** The Guardian strategically incorporates the verified directives into prompts sent to the model.
+5.  **Automated Validation:** The Guardian checks the model's responses against the requirements of the active directives (especially "auto" tier micro-directives in the current PoC).
+6.  **Accountability Loop:** The system enables an auditable trail from the enforced rules to the model’s behavior, with options to also anchor hashes of interactions.
 
 ---
 
 ## Key Innovations & Benefits
 
-* **Pre-Execution Rule Verification:** Ensures the governing rule-set's integrity *before* the LLM generates output.
-* **Micro-Directives:** Decomposes complex abstract concepts (like "First-Principles Reasoning") into smaller, concrete, and more easily testable steps for the LLM and Guardian.
+* **Pre-Execution Rule Verification:** Ensures the governing rule-set's integrity *before* the model generates output.
+* **Micro-Directives:** Decomposes complex abstract concepts (like "First-Principles Reasoning") into smaller, concrete, and more easily testable steps for the model and Guardian.
 * **Transparency & Auditability:** Human-readable directives coupled with blockchain-anchored verification provide unprecedented oversight.
-* **Enhanced LLM Reliability:** Aims to reduce hallucinations, instructional drift, and inconsistencies.
+* **Enhanced Model Reliability:** Aims to reduce hallucinations, instructional drift, and inconsistencies.
 * **Open & Model-Agnostic Potential:** Designed as an open-source (MIT licensed) middleware layer.
 * **Addressing "AI Slop" & Supporting Content Creators (Future Vision):** The framework's principles could be extended to verify human-generated content against defined standards, potentially combating low-quality "AI slop" and enabling fairer monetization for original creators.
 

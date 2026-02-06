@@ -6,7 +6,7 @@ This document explains how to read and extend the `src/directives_schema.json` f
 
 ## Purpose of the Directive Schema
 
-The `src/directives_schema.json` file defines the complete set of rules, or "directives," that the CANDELA "Directive Guardian" system uses to guide and validate the behavior of a Large Language Model (LLM). It's designed to be:
+The `src/directives_schema.json` file defines the complete set of rules, or "directives," that the CANDELA "Directive Guardian" system uses to guide and validate the behavior of a model endpoint (e.g., an LLM). It's designed to be:
 
 * **Human-Readable:** Allowing project maintainers, reviewers, and the community to understand the specific rules governing the AI.
 * **Machine-Parsable:** Enabling the Guardian software to load, verify, and utilize these directives programmatically.
@@ -22,7 +22,7 @@ Each directive in the JSON array is an object with several key fields:
 | :-------------------- | :------------------------------------------------------------------------------------------------------ | :---------------------------------------------- |
 | `id`                  | A unique numerical identifier for the main directive.                                                 | `3`                                             |
 | `sub` (optional)      | A sub-identifier (e.g., "a", "b", "c") used for micro-directives that break down a complex parent `id`. | `"a"` (for micro-directive `6a`)                |
-| `text`                | The natural-language statement of the rule as it would be understood by a human or presented to an LLM. | `"Truthfulness & Non-Deception – no knowingly false information."` |
+| `text`                | The natural-language statement of the rule as it would be understood by a human or presented to a model. | `"Truthfulness & Non-Deception – no knowingly false information."` |
 | `category`            | A broad functional grouping (e.g., "Core", "Ethical", "Reasoning", "Monitoring", "Communication", "Simplify", "Meta", "Policy", "Content", "Interaction", "Uncertainty", "Transparency", "Admin"). | `"Ethical"`                                     |
 | `notes` (optional)    | Brief explanatory notes for human reviewers regarding the directive's intent or application.            | `"No hallucination."`                           |
 | `validation_tier`     | (Currently conceptual for many, implemented for some "auto") Indicates how compliance is planned to be checked: "auto" (automated), "semi" (heuristic/NLP-assisted), or "human" (manual/policy engine). | `"auto"`                                        |
@@ -36,8 +36,8 @@ A core feature of CANDELA is the use of **"micro-directives"** to make complex o
 
 **Why Micro-Directives?**
 
-* **Clarity for LLMs:** Smaller, explicit steps are generally easier for LLMs to "follow" (i.e., generate statistically compliant output) than broad, abstract commands.
-* **Testability for the Guardian:** It's more feasible for the Guardian software to perform automated checks against well-defined, granular steps (e.g., "Does the output contain exactly two bullet points labeled 'Fact 1' and 'Fact 2'?") than to validate "Did the LLM use first principles?" holistically.
+* **Clarity for models:** Smaller, explicit steps are generally easier for models to "follow" (i.e., generate statistically compliant output) than broad, abstract commands.
+* **Testability for the Guardian:** It's more feasible for the Guardian software to perform automated checks against well-defined, granular steps (e.g., "Does the output contain exactly two bullet points labeled 'Fact 1' and 'Fact 2'?") than to validate "Did the model use first principles?" holistically.
 * **Modularity & Extensibility:** Micro-directives can be combined or refined more easily as the system evolves.
 * **Transparency:** The decomposition makes the intended reasoning process more explicit for human reviewers.
 

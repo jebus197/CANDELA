@@ -9,7 +9,7 @@
 
 ### The Problem: The Unpredictability of Modern AI
 
-Large Language Models (LLMs) are powerful tools, but they come with inherent risks for any organisation where trust, safety, and compliance are paramount. Unpredictable outputs ("hallucinations"), gradual deviation from instructions ("drift"), and opaque "black box" reasoning make it difficult to deploy them in mission-critical roles.
+Large AI models (including LLMs) are powerful tools, but they come with inherent risks for any organisation where trust, safety, and compliance are paramount. Unpredictable outputs ("hallucinations"), gradual deviation from instructions ("drift"), and opaque "black box" reasoning make it difficult to deploy them in mission-critical roles.
 
 ### The Solution: A Verifiable Governance Framework
 

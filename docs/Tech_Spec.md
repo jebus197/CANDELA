@@ -3,7 +3,7 @@
 **CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 
 **Purpose:**
-This document details the technical architecture, workflow, and implementation plan for the **CANDELA "Directive Guardian"** middleware. The Guardian is designed to enforce a machine-readable set of behavioral rules ("directives") on any Large Language Model (LLM). It achieves this by loading a verified directive set (whose integrity is confirmed against a blockchain-anchored hash), integrating directives into LLM prompts, validating LLM outputs against these rules, and using blockchain technology to optionally anchor hashes of interaction logs for immutability and provenance.
+This document details the technical architecture, workflow, and implementation plan for the **CANDELA "Directive Guardian"** middleware. The Guardian is designed to enforce a machine-readable set of behavioral rules ("directives") on any model endpoint (e.g., an LLM). It achieves this by loading a verified directive set (whose integrity is confirmed against a blockchain-anchored hash), integrating directives into prompts, validating model outputs against these rules, and using blockchain technology to optionally anchor hashes of interaction logs for immutability and provenance.
 
 ---
 
@@ -11,7 +11,7 @@ This document details the technical architecture, workflow, and implementation p
 
 The CANDELA system operates with the Directive Guardian as a central middleware component:
 
-**User/Application → Directive Guardian Middleware → LLM API → Directive Guardian Validator → (Optional) Blockchain Anchor for I/O**
+**User/Application → Directive Guardian Middleware → Model API → Directive Guardian Validator → (Optional) Blockchain Anchor for I/O**
 
 The key stages within the Guardian are:
 
@@ -21,17 +21,17 @@ The key stages within the Guardian are:
     * (MVP Goal) Queries a designated blockchain (e.g., Polygon Mumbai testnet) to retrieve the canonical anchored hash of the current official directive set.
     * Compares the local hash with the blockchain hash. If mismatched, an integrity alert is raised, and operation with unverified directives is prevented.
 2.  **Prompt Builder:**
-    * Strategically prepends or integrates the (now verified) directives, or a relevant subset (especially micro-directives), into the user's prompt before sending it to the LLM.
-3.  **LLM Caller:**
-    * Securely sends the composed prompt to an external LLM API (e.g., OpenAI, Gemini, Anthropic).
+    * Strategically prepends or integrates the (now verified) directives, or a relevant subset (especially micro-directives), into the user's prompt before sending it to the model API.
+3.  **Model Caller:**
+    * Securely sends the composed prompt to an external model API (e.g., OpenAI, Gemini, Anthropic).
 4.  **Output Validator:**
-    * Receives the LLM's raw response.
+    * Receives the model's raw response.
     * Programmatically checks this response against the `validation_criteria` defined for applicable directives in the `directives_schema.json` (focusing on "auto" tier directives in early versions).
     * Identifies and logs any compliance failures.
 5.  **Action Handler & (Optional) I/O Anchoring:**
     * If validated, the response is passed to the user/application.
-    * If validation fails, the Guardian can initiate retries (with feedback to the LLM), flag errors, or block the response.
-    * Optionally, a hash of the complete interaction bundle (input, verified directives used, final LLM response, validation status) can be anchored on the blockchain for a full audit trail.
+    * If validation fails, the Guardian can initiate retries (with feedback to the model), flag errors, or block the response.
+    * Optionally, a hash of the complete interaction bundle (input, verified directives used, final model response, validation status) can be anchored on the blockchain for a full audit trail.
 
 ---
 
@@ -72,7 +72,7 @@ The key stages within the Guardian are:
 
 * **Python:** Version 3.8+ recommended.
 * **Libraries:**
-    * `requests`: For making HTTP calls to LLM APIs (when real integration is implemented).
+    * `requests`: For making HTTP calls to model APIs (when real integration is implemented).
     * `web3.py` (Optional for PoC, required for MVP blockchain interaction): For interacting with Ethereum-compatible blockchains like Polygon. Install via `pip install web3`.
 * **Setup:**
     ```bash
@@ -82,7 +82,7 @@ The key stages within the Guardian are:
     pip install -r requirements.txt
     ```
 * **Environment Variables (for future MVP development):**
-    * `YOUR_LLM_API_KEY_ENV_VARIABLE`: For the chosen LLM provider.
+    * `YOUR_MODEL_API_KEY_ENV_VARIABLE`: For the chosen model provider.
     * `YOUR_BLOCKCHAIN_RPC_URL_ENV_VARIABLE`: RPC endpoint for the chosen testnet (e.g., Polygon Mumbai: `https://rpc-mumbai.maticvigil.com`, or Ethereum Sepolia).
     * `ANCHOR_PRIVATE_KEY_ENV_VARIABLE`: Private key of the wallet used for anchoring transactions on the testnet (ensure this wallet is funded with testnet tokens).
 
@@ -95,9 +95,9 @@ The key stages within the Guardian are:
 | 1. Load Directives & Compute Local Hash  | `_load_and_hash_directives()`      | Loads `src/directives_schema.json`, computes SHA-256. Includes basic error handling.                                                            |
 | 2. Verify Directive Set Integrity        | `_verify_directive_set_integrity()`| **CRITICAL STUB.** Currently simulates success if directives load. MVP: Must query blockchain for canonical hash & compare.                     |
 | 3. Anchor Verified Directive Bundle Hash | `_anchor_to_blockchain()`          | **MOCK.** Simulates anchoring `self.directive_bundle_hash`. MVP: Implement real testnet transaction.                                             |
-| 4. Construct LLM Prompt                  | `_construct_llm_prompt()`          | Prepends core directives (e.g., IDs 1-3) to user input. MVP: Needs more sophisticated directive selection & token management.                      |
-| 5. Call LLM API                          | `_call_llm_api()`                  | **MOCK.** Simulates LLM call, returns cycling responses. MVP: Implement real HTTP POST to LLM API.                                                 |
-| 6. Validate LLM Output                   | `_validate_llm_output()`           | **VERY BASIC POC.** Illustrative checks for "Confidence:" tag and one micro-directive structure. MVP: Implement checks for all "auto" tier directives. |
+| 4. Construct Model Prompt                | `_construct_llm_prompt()`          | Prepends core directives (e.g., IDs 1-3) to user input. MVP: Needs more sophisticated directive selection & token management.                      |
+| 5. Call Model API                        | `_call_llm_api()`                  | **MOCK.** Simulates model call, returns cycling responses. MVP: Implement real HTTP POST to chosen model API.                                      |
+| 6. Validate Model Output                 | `_validate_llm_output()`           | **VERY BASIC POC.** Illustrative checks for "Confidence:" tag and one micro-directive structure. MVP: Implement checks for all "auto" tier directives. |
 | 7. Retry Loop for Validation             | Loop in `process_user_request()`   | Basic retry if validation issues found. MVP: Refine regeneration prompt.                                                                         |
 | 8. Anchor I/O Bundle Hash                | `_anchor_to_blockchain()`          | **MOCK.** Simulates anchoring hash of (prompt, response, issues, directive_hash). MVP: Implement real testnet transaction for audit trail.         |
 
@@ -130,8 +130,8 @@ The `src/directives_schema.json` file includes a `validation_criteria` field for
 
 ## 7. Developer To-Do List (Towards MVP v0.3 - v0.4)
 
-1.  **Real LLM Integration (High Priority):**
-    * Implement the `_call_llm_api()` function in a dedicated `guardian_mvp.py` to make live calls to a chosen LLM API (e.g., OpenAI).
+1.  **Real Model Integration (High Priority):**
+    * Implement the `_call_llm_api()` function in a dedicated `guardian_mvp.py` to make live calls to a chosen model API (e.g., OpenAI).
     * Implement secure API key management (using environment variables).
     * Implement robust error handling for API calls.
 2.  **Implement Directive Set Integrity Verification (High Priority):**
@@ -146,7 +146,7 @@ The `src/directives_schema.json` file includes a `validation_criteria` field for
     * Set up `pytest` in the `tests/` folder.
     * Write initial unit tests for: directive loading/hashing, core "auto" validation logic, and mock interactions for the blockchain functions.
 6.  **Refine Prompt Engineering (Medium Priority):**
-    * Experiment with different ways to structure and include directives in the LLM prompt for optimal adherence within token limits.
+    * Experiment with different ways to structure and include directives in the model prompt for optimal adherence within token limits.
 7.  **Documentation Updates (Ongoing):**
     * Add an architecture diagram (e.g., PNG) to the `docs/` folder and reference it.
     * Update this `TECH_SPEC.md` and other documents as MVP features are implemented.
