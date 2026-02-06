@@ -58,7 +58,7 @@ CANDELA is designed as a foundational technology for verifiable governance. Its 
 * **Ransomware Defence:** The framework could be adapted to govern file-system operations, using on-chain anchored file-state hashes (Merkle roots) to detect and block the unauthorised mass-encryption characteristic of ransomware.
 
 * **Incentivising Quality (Post-v1.0): The "Anti-Slop" Engine**
-    Far down the roadmap, after the core governance framework is mature, its principles could be used to address the growing problem of low-quality, machine-generated "AI slop." The Guardian's scoring mechanism could power a "Quality Token Engine," creating a tangible economic incentive that **rewards human creators** for producing verifiably high-quality, directive-compliant work. This remains a conceptual exploration focused on using verifiable quality to foster a healthier digital ecosystem.
+    Down the roadmap, after the core governance framework is mature, its principles could be used to address the growing problem of low-quality, machine-generated "AI slop." The Guardian's scoring mechanism could power a "Quality Token Engine," creating a tangible economic incentive that **rewards human creators** for producing verifiably high-quality, directive-compliant work. This remains a conceptual exploration focused on using verifiable quality to foster a healthier digital ecosystem.
 
 ---
 
