@@ -1,4 +1,4 @@
-# CANDELA – Technical Specification (v0.1.1 - May 2025)
+# CANDELA – Technical Specification (v0.3 - Feb 2026)
 
 **CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 
@@ -35,7 +35,7 @@ The key stages within the Guardian are:
 
 ---
 
-## 2. Repository Structure (Current PoC v0.1)
+## 2. Repository Structure (Current PoC v0.3)
 
 | Path                                               | Purpose                                                                                       |
 | :------------------------------------------------- | :-------------------------------------------------------------------------------------------- |
@@ -50,16 +50,16 @@ The key stages within the Guardian are:
 | `docs/example_directives_schema_annotated.jsonc`   | A commented version of the schema with headings for easier human understanding (not for runtime). |
 | `src/`                                             | Directory for source code:                                                                    |
 | `src/directives_schema.json`                       | The machine-readable directive list (v3.2, 76 items, strict JSON format).                     |
-| `src/guardian_poc_v0.1.py`                         | The primary, more comprehensive Proof-of-Concept Python script for the Guardian.                |
-| `src/guardian_prototype.py`                        | An earlier, more minimal PoC script (kept for illustrative reference).                        |
-| `src/guardian_extended.py`                         | An earlier, more commented PoC script with stubs for extension (kept for illustrative reference). |
-| `requirements.txt`                                 | Python dependencies (currently `requests`, `web3.py` for future use).                         |
-| `tests/`                                           | (Placeholder for future unit tests for the Guardian software).                                |
-| `CITATION.cff`                                     | (To be added) Machine-readable citation information for the project.                        |
+| `src/guardian_prototype.py`                        | Core PoC Guardian (hashing, anchoring, basic checks).                                         |
+| `src/guardian_extended.py`                         | Regex guard + lazy hand-off to prototype.                                                    |
+| `src/guardian_runtime.py`                          | Cached runtime wrapper + async Mini‑BERT hook.                                               |
+| `requirements.txt`                                 | Canonical dependencies (includes sentence-transformers).                                      |
+| `tests/`                                           | Active tests (`test_regex_guard.py`, `test_directive_schema.py`).                             |
+| `CITATION.cff`                                     | Present in repo root.                                                                         |
 
 ---
 
-## 3. Dependencies & Setup (for PoC `guardian_poc_v0.1.py`)
+## 3. Dependencies & Setup (for PoC `guardian_prototype.py` + `guardian_runtime.py`)
 
 * **Python:** Version 3.8+ recommended.
 * **Libraries:**
@@ -79,9 +79,9 @@ The key stages within the Guardian are:
 
 ---
 
-## 4. Guardian Workflow (Implemented in `guardian_poc_v0.1.py`)
+## 4. Guardian Workflow (Implemented in `guardian_prototype.py`)
 
-| Step                                     | Function in `guardian_poc_v0.1.py` | PoC Status / Notes                                                                                                                               |
+| Step                                     | Function in `guardian_prototype.py` | PoC Status / Notes                                                                                                                               |
 | :--------------------------------------- | :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. Load Directives & Compute Local Hash  | `_load_and_hash_directives()`      | Loads `src/directives_schema.json`, computes SHA-256. Includes basic error handling.                                                            |
 | 2. Verify Directive Set Integrity        | `_verify_directive_set_integrity()`| **CRITICAL STUB.** Currently simulates success if directives load. MVP: Must query blockchain for canonical hash & compare.                     |
@@ -119,10 +119,10 @@ The `src/directives_schema.json` file includes a `validation_criteria` field for
 
 ---
 
-## 7. Developer To-Do List (Towards MVP v0.2 - v0.3)
+## 7. Developer To-Do List (Towards MVP v0.3 - v0.4)
 
 1.  **Real LLM Integration (High Priority):**
-    * Implement the `_call_llm_api()` function in `guardian_poc_v0.1.py` (or a new `guardian_mvp.py`) to make live calls to a chosen LLM API (e.g., OpenAI).
+    * Implement the `_call_llm_api()` function in a dedicated `guardian_mvp.py` to make live calls to a chosen LLM API (e.g., OpenAI).
     * Implement secure API key management (using environment variables).
     * Implement robust error handling for API calls.
 2.  **Implement Directive Set Integrity Verification (High Priority):**
@@ -149,9 +149,9 @@ The `src/directives_schema.json` file includes a `validation_criteria` field for
 
 | Event                                     | Version Bump Example | Action Required                                                                     |
 | :---------------------------------------- | :------------------- | :---------------------------------------------------------------------------------- |
-| Change to directive text, ID, or criteria | v0.1.x → v0.2.0      | Recompute directive bundle hash, anchor new hash on blockchain, update all docs.      |
-| Guardian code refactor (no directive change) | v0.1.1 → v0.1.2      | No re-anchoring of directive hash needed. Update software version.                   |
-| New directive added to schema             | v0.2.x → v0.3.0      | Update schema, tests, docs. Recompute bundle hash, anchor new hash.                 |
+| Change to directive text, ID, or criteria | v0.3.x → v0.4.0      | Recompute directive bundle hash, anchor new hash on blockchain, update all docs.      |
+| Guardian code refactor (no directive change) | v0.3.0 → v0.3.1      | No re-anchoring of directive hash needed. Update software version.                   |
+| New directive added to schema             | v0.3.x → v0.4.0      | Update schema, tests, docs. Recompute bundle hash, anchor new hash.                 |
 | Breaking change to schema structure       | v0.x.x → v1.0.0      | Migrate validation harness, update all docs. Recompute bundle hash, anchor new hash. |
 
 *(This policy ensures that there's always a clear link between a software version, the directive set version it uses, and its corresponding on-chain anchored hash.)*

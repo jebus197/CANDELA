@@ -45,14 +45,15 @@ def _resolve_guardian() -> Callable[[str], Tuple[bool, str]]:
 
 
 # ── 3.  Public entry point ─────────────────────────────────────────────────
-def guardian(text: str) -> Tuple[bool, str]:
+def guardian(text: str) -> dict:
     """
     1. Run fast regex screen.
     2. If passed, delegate to the semantic Guardian (resolved lazily).
+    Returns a dict verdict for compatibility with runtime and API layers.
     """
     ok, info = regex_guard(text)
     if not ok:
-        return False, f"regex_block:{info}"
+        return {"passed": False, "score": 0, "violations": ["regex_block"], "notes": [info]}
 
     global _guardian_fn
     if _guardian_fn is None:            # resolve on first real use
@@ -64,5 +65,9 @@ def guardian(text: str) -> Tuple[bool, str]:
 # ── 4.  CLI harness (manual testing) ───────────────────────────────────────
 if __name__ == "__main__":
     sample = input("Paste text to test:\n> ")
-    passed, detail = guardian(sample)
-    print("✅  PASS" if passed else f"❌  BLOCKED  ({detail})")
+    res = guardian(sample)
+    if res.get("passed"):
+        print("✅  PASS")
+    else:
+        detail = ", ".join(res.get("violations", []) + res.get("notes", []))
+        print(f"❌  BLOCKED  ({detail})")

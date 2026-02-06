@@ -12,6 +12,7 @@ Anchor the current SHA-256 of src/directives_schema.json to Ethereum Sepolia.
 import os
 import json
 import time
+import hashlib
 from pathlib import Path
 
 from web3 import Web3, HTTPProvider
@@ -26,8 +27,14 @@ from dotenv import load_dotenv
 load_dotenv()                                                     # .env file
 
 RPC_URL      = os.getenv("SEPOLIA_RPC_URL")                      # Alchemy URL
-PRIVATE_KEY  = os.getenv("PRIVATE_KEY")                          # MetaMask key
+PRIVATE_KEY  = os.getenv("PRIVATE_KEY") or os.getenv("SEPOLIA_PRIVATE_KEY")
 DIR_FILE     = Path("src/directives_schema.json")                # Rule-set
+
+if not RPC_URL or not PRIVATE_KEY:
+    raise SystemExit(
+        "Missing SEPOLIA_RPC_URL and/or PRIVATE_KEY (or SEPOLIA_PRIVATE_KEY). "
+        "Add them to a .env file in the repo root."
+    )
 
 w3 = Web3(HTTPProvider(RPC_URL))
 acct = Account.from_key(PRIVATE_KEY)
@@ -36,7 +43,10 @@ acct = Account.from_key(PRIVATE_KEY)
 # 2. Compute SHA-256                                                          #
 # --------------------------------------------------------------------------- #
 
-digest = Web3.keccak(DIR_FILE.read_bytes()).hex()                # 0x-prefixed
+# Canonical JSON hash (sorted keys, Unicode preserved) to match tests/docs
+directives = json.loads(DIR_FILE.read_text(encoding="utf-8"))
+canonical = json.dumps(directives, sort_keys=True, ensure_ascii=False).encode("utf-8")
+digest = hashlib.sha256(canonical).hexdigest()
 print("Directive SHA-256:", digest)
 
 # --------------------------------------------------------------------------- #
@@ -51,7 +61,7 @@ tx      = {
     "gasPrice": w3.to_wei("2", "gwei"),
     "nonce"   : nonce,
     "chainId" : 11155111,            # Sepolia
-    "data"    : digest               # embed the hash
+    "data"    : bytes.fromhex(digest)  # embed the hash (raw bytes)
 }
 
 signed = acct.sign_transaction(tx)
@@ -74,5 +84,8 @@ print(f"✅  Confirmed in block {receipt.blockNumber}")
 ANCHOR_LOG = Path("docs/ANCHORS.md")
 entry = f"- `{digest}` → [{tx_hash.hex()}](https://sepolia.etherscan.io/tx/{tx_hash.hex()})\n"
 ANCHOR_LOG.touch(exist_ok=True)
-ANCHOR_LOG.write_text(entry, encoding="utf-8") if entry not in ANCHOR_LOG.read_text(encoding="utf-8") else None
+existing = ANCHOR_LOG.read_text(encoding="utf-8")
+if entry not in existing:
+    with ANCHOR_LOG.open("a", encoding="utf-8") as f:
+        f.write(entry)
 print("📄  Logged to docs/ANCHORS.md")
