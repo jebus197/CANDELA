@@ -1,5 +1,6 @@
 # runtime latency / cache
-mode: sync_light
+# mode: strict | sync_light | regex_only
+mode: strict
 latency_budget_ms: 120
 cache_ttl_s: 86400
 
