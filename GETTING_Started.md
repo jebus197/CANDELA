@@ -10,7 +10,7 @@ git clone https://github.com/<your-user>/CANDELA.git
 cd CANDELA
 python3 -m pip install -r requirements.txt
 ```
-*Python 3.9+ recommended. `requirements.txt` installs `web3`, `python-dotenv`, `requests`, `sentence-transformers`, `torch` (larger download).*
+*Python 3.9+ recommended. `requirements.txt` installs `web3`, `python-dotenv`, `requests`, **`sentence-transformers` and `torch` (large downloads; first install may take a minute).***
 
 ---
 
