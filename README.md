@@ -30,7 +30,7 @@ This project is evolving through distinct phases, moving from a robust foundatio
 #### ✅ **Phase 0: The Foundation (Complete)**
 
 The initial goal was to prove the core concept: that an external governance layer could verifiably enforce a set of rules. This phase delivered:
-* A **Core Guardian** capable of regex and semantic checks.
+* A **Core Guardian** capable of regex and semantic checks (Mini‑BERT detector in `src/detectors/mini_semantic.py`).
 * The first **On-Chain Anchoring** of the directive set on the Sepolia testnet, creating a permanent, cryptographic proof of the rules.
 * A full **Reproducibility Suite** (`pytest`) to ensure the integrity of the framework can be independently verified.
 
@@ -71,7 +71,7 @@ CANDELA is designed as a foundational technology for verifiable governance. Its 
 2.  **Set Up Your Environment**
     * Python 3.8+ is required.
     * (Optional but recommended) Create and activate a virtual environment.
-    * Install dependencies: `pip install -r requirements.txt`
+    * Install dependencies (includes `sentence-transformers` and `torch`, which are larger downloads): `pip install -r requirements.txt`
 3.  **Run Tests to Verify Integrity**
     ```bash
     python3 -m pytest tests

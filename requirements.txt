@@ -2,3 +2,4 @@ requests>=2.0
 web3>=6.10
 python-dotenv>=1.0
 sentence-transformers==2.4.0
+torch==2.2.1

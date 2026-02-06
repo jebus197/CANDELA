@@ -1,4 +1,4 @@
-# CITATION.cff — CANDELA v0.2.0 (released 2025-08-05)
+# CITATION.cff — CANDELA v0.3.0 (released 2026-02-06)
 
 cff-version: 1.2.0
 type: software
@@ -7,8 +7,8 @@ message: >
   please cite it using the metadata from this file.
 
 title: "CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring"
-version: "0.2.0"
-date-released: "2025-08-05"
+version: "0.3.0"
+date-released: "2026-02-06"
 
 doi: 10.17605/OSF.IO/3S7BT
 
@@ -35,6 +35,6 @@ license: MIT
 identifiers:
   - type: doi
     value: 10.17605/OSF.IO/3S7BT
-    description: "Persistent OSF registration for CANDELA v0.2.0"
+    description: "Persistent OSF registration for CANDELA v0.3.0"
 
 repository-code: "https://github.com/jebus197/CANDELA"

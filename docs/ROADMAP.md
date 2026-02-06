@@ -17,7 +17,7 @@ Legend
 
 ---
 
-## Phase 0.2  — Performance Optimisation 🟡 (Active Aug 2025)  
+## Phase 0.2  — Performance Optimisation ✅ (Completed Aug 2025)  
 | Item | Goal | Implementation steps |
 |------|------|----------------------|
 | **0.2-A Runtime cache + warm preload** | ≤10 ms fast-path latency | Branch `opt-cache` → add `src/guardian_runtime.py` → PR → tests → merge. |
@@ -29,26 +29,24 @@ Verification: `python3 -m pytest tests` + latency sample from `src/guardian_runt
 
 ---
 
-## Phase 0.3  — Outreach & External Review ⚙️ (Planned Q4 2025)  
-| Task | How we’ll do it |
-|------|-----------------|
-| One-pager PDF | `docs/CANDELA_one_pager.md` → PDF → upload to OSF |
-| Expert contacts | Dr Bryson, Foresight Foundation, GovAI, compliance vendors |
-| Target list | `outreach/targets.csv` (name, org, email, focus) |
-| Feedback capture | `outreach/feedback.md` + GitHub issues |
-
-Success: ≥3 detailed expert reviews; roadmap recalibrated.
+## Phase 0.3  — Semantic Guard & Release ✅ (Released v0.3 Feb 2026)  
+| Task | Status | Notes |
+|------|--------|-------|
+| Mini‑BERT semantic detector | Complete | `src/detectors/mini_semantic.py`, wired into runtime |
+| Dependency update | Complete | `sentence-transformers`, `torch` added |
+| Release & docs | Complete | v0.3 tag, Tech Spec v0.3, README/Getting Started |
+| Anchoring | Complete | Directive bundle hash anchored on Sepolia (docs/ANCHORS.md) |
 
 ---
 
-## Phase 0.4 — PoC Stabilisation (Current)  
+## Phase 0.4 — PoC Stabilisation (Active)  
 Goal: finish a fully runnable PoC and lock the provenance trail.  
 | Task | Status | Notes |
 |------|--------|-------|
-| Live Sepolia anchoring (SHA‑256) | Pending | Requires SEPOLIA_RPC_URL + PRIVATE_KEY |
-| Update `docs/ANCHORS.md` with tx | Pending | Auto‑append after anchoring |
+| Live Sepolia anchoring (SHA‑256) | Complete | Hash/tx recorded in `docs/ANCHORS.md` |
+| Update `docs/ANCHORS.md` with tx | Complete | Auto‑append after anchoring |
 | Run full local test + stress checks | Complete | pytest + runtime checks |
-| Create reviewer run bundle | Pending | After anchoring |
+| Create reviewer run bundle | Complete | Review bundle + zip prepared |
 
 ---
 
