@@ -13,7 +13,7 @@ Large Language Models (LLMs) are powerful tools, but they come with inherent ris
 
 ### The Solution: A Verifiable Governance Framework
 
-CANDELA is a **fully functional proof-of-concept (PoC)** that solves this problem. It is not another AI model, but a simple, model-agnostic **governance framework** that acts as an external "Guardian" for any AI.
+**CANDELA is a model-agnostic—and more importantly, intelligence-agnostic—governance framework.** It acts as an external "Guardian" that applies the same verification standards to any output routed through Candela, whether authored by a human or a model.
 
 This Guardian enforces a clear, human-readable set of rules (a "Directive Scaffold") and uses blockchain anchoring to create a permanent, tamper-evident audit trail for those rules. The result is a fast, reliable, and transparent system for ensuring AI tools operate safely and predictably, without needing to alter their complex internal architecture.
 
