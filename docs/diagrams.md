@@ -1,5 +1,10 @@
 # CANDELA Visuals (lightweight)
 
+Palette (RGB):
+- Blue (outputs): `rgb(0,102,204)`
+- Green (pass to Guardian): `rgb(0,153,0)`
+- Red (stop/block): `rgb(204,0,0)`
+
 ## Guardian flow (sequence)
 ```mermaid
 sequenceDiagram
@@ -35,16 +40,21 @@ sequenceDiagram
 ## Mode selection (flow)
 ```mermaid
 flowchart LR
-    A[Input] --> B{Regex pass?}
-    B -->|No| X[Block: regex rule]
-    B -->|Yes| C{Mode}
-    C -->|strict| D[Semantic check]
-    C -->|sync_light| E[Return response; semantic async]
-    C -->|regex_only| F[Skip semantic]
+    classDef blue fill:#0066cc,stroke:#004c99,color:white;
+    classDef green fill:#009900,stroke:#006600,color:white;
+    classDef red fill:#cc0000,stroke:#990000,color:white;
+
+    A[Input]:::blue --> B{Regex pass?}:::blue
+    B -->|No| X[Block: regex rule]:::red
+    B -->|Yes| C{Mode}:::blue
+    C -->|strict| D[Semantic check]:::blue
+    C -->|sync_light| E[Return fast;<br/>semantic async]:::blue
+    C -->|regex_only| F[Skip semantic]:::blue
     D -->|Fail| X
-    D -->|Pass| G[Log + Merkle batch + anchor]
+    D -->|Pass| G[Log + Merkle batch + anchor]:::green
     E --> G
     F --> G
 ```
-
-These diagrams avoid extra dependencies (rendered by GitHub Mermaid). For a static illustration of “allowed vs blocked” intents, prefer an offline PNG/SVG generated during docs build to keep runtime deps lean.
+Descriptions:
+- Guardian flow shows input through regex and semantic checks, with strict vs sync_light branching, then logging, Merkle batching, and anchoring.
+- Mode selection highlights outcomes with color cues: blue (processing/output path), green (pass/anchor), red (block).
