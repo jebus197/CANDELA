@@ -22,6 +22,10 @@ How it works (concise):
 
 This keeps the UX fast while preserving cryptographic, auditable provenance for both the rule-set and the outputs.
 
+Verification tools (CLI)
+- `python3 src/verify_output.py --line N` (or `--hash <text_sha256>`) prints the log entry, its Merkle proof, and the computed root to compare with the anchored root.
+- `python3 src/latency_stats.py` prints p50/p95 latency from `logs/latency_log.jsonl`, broken down by mode.
+
 
 
 > **The Core Idea:** By separating the rules (the *what*) from the model (the *how*), Candela makes AI governance explicit, auditable, and reliable.

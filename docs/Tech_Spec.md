@@ -55,6 +55,8 @@ The key stages within the Guardian are:
 | `src/guardian_runtime.py`                          | Cached runtime wrapper + async Mini‑BERT hook + output logging.                              |
 | `logs/output_log.jsonl`                            | Append-only log of every checked output (input hash, verdict, timestamp).                    |
 | `src/anchor_outputs.py`                            | Batches output log into a Merkle root and anchors it on-chain.                               |
+| `src/verify_output.py`                             | Produces a Merkle proof for a specific log entry.                                            |
+| `src/latency_stats.py`                             | Summarises p50/p95 latency from `logs/latency_log.jsonl`.                                    |
 | `requirements.txt`                                 | Canonical dependencies (includes sentence-transformers).                                      |
 | `tests/`                                           | Active tests (`test_regex_guard.py`, `test_directive_schema.py`).                             |
 | `CITATION.cff`                                     | Present in repo root.                                                                         |
