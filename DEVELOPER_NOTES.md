@@ -16,9 +16,9 @@
 
 ## One-liner recipes
 
-### Snapshot current state
+### Snapshot current state (local only)
 ```bash
-git checkout main && git pull
+git checkout main
 git tag -a v0.2-draft -m "Stable before validator refactor"
 git branch backup/v0.2-draft
-git push origin main v0.2-draft backup/v0.2-draft
+# push only when you explicitly decide to publish

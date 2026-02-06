@@ -1,4 +1,4 @@
-# CANDELA – Quick-Start Guide (v0.2)
+# CANDELA – Quick-Start Guide (v0.3)
 
 > **Goal:** run the proof-of-concept, anchor the directive-bundle hash on Sepolia test-net, and verify it on Etherscan in ≈ 10 minutes.
 

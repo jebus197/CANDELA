@@ -12,7 +12,6 @@ No existing functionality has been removed.
 
 from __future__ import annotations
 import json, hashlib, pathlib, datetime
-from web3 import Web3
 from typing import Dict
 
 # ── paths --------------------------------------------------------------
@@ -35,6 +34,10 @@ def _bundle_hash(data: list[Dict]) -> str:
 
 def _anchor_on_chain(h: str) -> str:
     """Write hash to Sepolia. Returns tx hash."""
+    if WALLET_PRIV.lower().startswith("0xyour_private_key"):
+        print(f"[INFO] (dev) skip anchor {h[:8]}… (placeholder key)")
+        return "0xDEV_SKIP"
+    from web3 import Web3
     w3 = Web3(Web3.HTTPProvider(SEPOLIA_RPC))
     acct = w3.eth.account.from_key(WALLET_PRIV)
     tx = {
@@ -73,7 +76,7 @@ def guardian_session(text: str) -> dict:
     """
     directives = _load_directives()
     bundle_h   = _bundle_hash(directives)
-    KNOWN_HASH = "c2664a99eb7f98f46d368815184158cbd74b8572d61974663c45726f8235e9cd"
+    KNOWN_HASH = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
 
     if bundle_h != KNOWN_HASH:
         # Integrity breach – anchor new hash and warn

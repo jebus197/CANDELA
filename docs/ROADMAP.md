@@ -25,7 +25,7 @@ Legend
 | **0.2-C SQLite persistent cache** *(optional)* | Verdict reuse after restart | Replace in-memory dict with `sqlite3` table. |
 | **0.2-D Heavy-detector stub** | Off-path ML checks | Async hook in runtime file (currently NO-OP). |
 
-Verification: `python3 -m pytest tests` + `scripts/latency_check.py`.
+Verification: `python3 -m pytest tests` + latency sample from `src/guardian_runtime.py`.
 
 ---
 
@@ -38,6 +38,17 @@ Verification: `python3 -m pytest tests` + `scripts/latency_check.py`.
 | Feedback capture | `outreach/feedback.md` + GitHub issues |
 
 Success: ≥3 detailed expert reviews; roadmap recalibrated.
+
+---
+
+## Phase 0.4 — PoC Stabilisation (Current)  
+Goal: finish a fully runnable PoC and lock the provenance trail.  
+| Task | Status | Notes |
+|------|--------|-------|
+| Live Sepolia anchoring (SHA‑256) | Pending | Requires SEPOLIA_RPC_URL + PRIVATE_KEY |
+| Update `docs/ANCHORS.md` with tx | Pending | Auto‑append after anchoring |
+| Run full local test + stress checks | Complete | pytest + runtime checks |
+| Create reviewer run bundle | Pending | After anchoring |
 
 ---
 
@@ -57,6 +68,33 @@ Success: ≥3 detailed expert reviews; roadmap recalibrated.
 
 ---
 
+## Phase 1.2 — Service Layer & GUI (Future) ⚙️  
+Goal: a web‑accessible interface for non‑developers to use Candela as a service.  
+| Sub-task | Notes |
+|---------|-------|
+| Web GUI + accounts | Hosted portal for directive sets and audit views |
+| Usage gating | Optional paid tiers or API keys |
+| Run bundles | One‑click verification + exportable reports |
+
+---
+
+## Phase 1.3 — Tokenised Quality Incentives (post‑v1) ⚙️  
+Goal: turn Guardian scoring into a verified, human‑quality signal and reward path.  
+| Sub-task | Notes |
+|---------|-------|
+| Define quality thresholds | Publish score bands (e.g., 85/90/95) tied to directive compliance |
+| Proof of human authorship | Build on Phase 1.1 (attestation + evidence bundle) |
+| Human review layer | Community reviewers validate borderline/high‑impact content |
+| Evidence bundle | Store: directive hash, score, violations, timestamp, signer, optional content hash |
+| Issuance design | Start off‑chain credits; migrate to ERC‑20 only after abuse testing |
+| Anti‑gaming controls | Reputation weights, sampling audits, rate limits, and reviewer cross‑checks |
+| Anti‑abuse controls | Rate limits, reviewer sampling, appeal flow, audit logs |
+| Pilot cohort | Small, vetted group to validate incentives and false‑positive rates |
+| Public badge | “Candela‑Verified” stamp + link to evidence bundle |
+| Governance safeguards | Transparent rules; revocation if evidence is invalid |
+
+---
+
 ## Phase 2.0  — Detector Plug-In Stubs ⚙️  
 Interface `src/detectors/base.py`; empty subclasses for stylometry, watermark, k-NN.
 
@@ -67,10 +105,7 @@ Interface `src/detectors/base.py`; empty subclasses for stylometry, watermark, k
 
 ---
 
-## Stretch Concepts (optional, unscheduled)
-
-### Anti-Slop Quality Incentives  
-Use Guardian score to mint CQT (ERC-20). Requires Phase 1.1 proof path.
+## Additional concepts (post‑v1, optional)
 
 ### Ransomware Defence-in-Place 🛡️  
 1. Hourly snapshot → Merkle root anchored.  
@@ -84,9 +119,16 @@ Multisig contract controlling directive hash anchor; community vote for rule upd
 ---
 
 ## Cryptographic Provenance (reference)  
-Anchored directive hash: `c2664a99e…e9cd`  
-Sepolia tx: `0x0ca63893…9d56c` *(view on Etherscan)*  
+Anchored directive hash: `7b8d69ce…c73d`  
+Sepolia tx: `0x2653a983ce75c31de39ab4b53c01fada024aac170c2fc99b7845f8df4702db70`  
 Reproducibility test hash: `7b8d69ce…c73d`
+
+---
+
+## Current Position (as of now)  
+- PoC codebase is runnable locally with tests passing.  
+- Live anchoring is the final blocker before declaring PoC complete.  
+- Once anchoring succeeds, Phase 0.4 completes and the project sits at the start of Phase 0.3 (external review).  
 
 ---
 

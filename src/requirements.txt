@@ -1,4 +1,6 @@
 # requirements.txt
+# NOTE: Canonical dependencies live in /requirements.txt.
+# This file is kept for API-specific extras and legacy notes only.
 
 requests>=2.0
 web3.py   # Uncomment and install when implementing real blockchain anchoring

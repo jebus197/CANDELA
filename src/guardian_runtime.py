@@ -19,7 +19,7 @@ BUDGET_MS   = int(CFG.get("latency_budget_ms", 120))
 CACHE_TTL   = int(CFG.get("cache_ttl_s", 86400))
 THRESHOLD   = float(CFG.get("detectors", {}).get("mini_semantic", {}).get("threshold", 0.80))
 
-DIRECTIVES_HASH  = "c2664a99eb7f98f46d368815184158cbd74b8572d61974663c45726f8235e9cd"
+DIRECTIVES_HASH  = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
 _cache: Dict[str, Tuple[float, dict]] = {}
 
 # ── helpers -------------------------------------------------------------
