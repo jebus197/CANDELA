@@ -26,6 +26,9 @@ Verification tools (CLI)
 - `python3 src/verify_output.py --line N` (or `--hash <text_sha256>`) prints the log entry, its Merkle proof, and the computed root to compare with the anchored root.
 - `python3 src/latency_stats.py` prints p50/p95 latency from `logs/latency_log.jsonl`, broken down by mode.
 
+Visuals
+- Mermaid diagrams of the Guardian flow and mode selection: see `docs/diagrams.md` (rendered on GitHub).
+
 
 
 > **The Core Idea:** By separating the rules (the *what*) from the model (the *how*), Candela makes AI governance explicit, auditable, and reliable.
