@@ -47,6 +47,7 @@ Goal: finish a fully runnable PoC and lock the provenance trail.
 | Update `docs/ANCHORS.md` with tx | Complete | Auto‑append after anchoring |
 | Run full local test + stress checks | Complete | pytest + runtime checks |
 | Create reviewer run bundle | Complete | Review bundle + zip prepared |
+| Output log + Merkle anchoring | Complete | JSONL log batched via `src/anchor_outputs.py` |
 
 ---
 

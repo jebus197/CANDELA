@@ -17,6 +17,8 @@ Large Language Models (LLMs) are powerful tools, but they come with inherent ris
 
 This Guardian enforces a clear, human-readable set of rules (a "Directive Scaffold") and uses blockchain anchoring to create a permanent, tamper-evident audit trail for those rules. The result is a fast, reliable, and transparent system for ensuring AI tools operate safely and predictably, without needing to alter their complex internal architecture.
 
+In addition to anchoring the directive set itself, Candela now logs every checked output off-chain, batches them into Merkle roots, and anchors those roots on-chain via `src/anchor_outputs.py`. This keeps UX fast while giving verifiable proof of individual outputs when needed.
+
 
 
 > **The Core Idea:** By separating the rules (the *what*) from the model (the *how*), Candela makes AI governance explicit, auditable, and reliable.

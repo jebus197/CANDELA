@@ -52,7 +52,9 @@ The key stages within the Guardian are:
 | `src/directives_schema.json`                       | The machine-readable directive list (v3.2, 76 items, strict JSON format).                     |
 | `src/guardian_prototype.py`                        | Core PoC Guardian (hashing, anchoring, basic checks).                                         |
 | `src/guardian_extended.py`                         | Regex guard + lazy hand-off to prototype.                                                    |
-| `src/guardian_runtime.py`                          | Cached runtime wrapper + async Mini‑BERT hook.                                               |
+| `src/guardian_runtime.py`                          | Cached runtime wrapper + async Mini‑BERT hook + output logging.                              |
+| `logs/output_log.jsonl`                            | Append-only log of every checked output (input hash, verdict, timestamp).                    |
+| `src/anchor_outputs.py`                            | Batches output log into a Merkle root and anchors it on-chain.                               |
 | `requirements.txt`                                 | Canonical dependencies (includes sentence-transformers).                                      |
 | `tests/`                                           | Active tests (`test_regex_guard.py`, `test_directive_schema.py`).                             |
 | `CITATION.cff`                                     | Present in repo root.                                                                         |
