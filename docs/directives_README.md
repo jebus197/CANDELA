@@ -73,7 +73,7 @@ To manage the development complexity of validating all 76 directives, they are c
 * **`semi`**: Directives that may require more advanced heuristics, lightweight Natural Language Processing (NLP) models, or more complex programmed logic for automated validation. These are targets for later MVP stages and beyond. (e.g., Directive 8 "Reject hallucinated confidence," Directive 10 "Disclose uncertainty explicitly").
 * **`human`**: Inherently subjective or highly complex ethical rules that will likely always require some level of human oversight or a sophisticated external policy engine to adjudicate fully (e.g., Directive 2 "Do no harm," Directive 35 "Only redact or suppress output when structurally necessary for coherence or safety"). The Guardian might flag outputs related to these for human review.
 
-In the current v0.1 Proof-of-Concept, `guardian_prototype.py` + `guardian_extended.py` demonstrate basic validation, with `guardian_runtime.py` adding caching and the Mini‑BERT hook. Full implementation of "auto" tier checks is a primary goal for the MVP (v0.2/v0.3) as per the [ROADMAP.md](ROADMAP.md).
+In the current v0.3 PoC, `guardian_runtime.py` provides cached regex + Mini‑BERT checks, logs every output, and anchors Merkle roots of those logs on Sepolia (`src/anchor_outputs.py`). Full "auto" tier coverage and service hardening remain active roadmap items.
 
 ---
 
@@ -89,5 +89,5 @@ The `src/directives_schema.json` file is version-controlled (currently v3.2). A 
 
 *This guide helps understand the structure and intent of the CANDELA directives. For precise technical details, please refer to `TECH_SPEC.md` and the `src/directives_schema.json` file itself.*
 
-*Last Updated: May 16, 2025*
+*Last Updated: Feb 06, 2026*
 *Repository: [https://github.com/jebus197/CANDELA](https://github.com/jebus197/CANDELA)* *Copyright (c) 2024-2025 George Jackson (CANDELA Project Lead). MIT Licensed.*

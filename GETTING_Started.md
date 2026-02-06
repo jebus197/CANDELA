@@ -10,7 +10,7 @@ git clone https://github.com/<your-user>/CANDELA.git
 cd CANDELA
 python3 -m pip install -r requirements.txt
 ```
-*Python 3.9+ recommended. `requirements.txt` installs `web3`, `python-dotenv`, `requests`.*
+*Python 3.9+ recommended. `requirements.txt` installs `web3`, `python-dotenv`, `requests`, `sentence-transformers`, `torch` (larger download).*
 
 ---
 
@@ -69,7 +69,13 @@ Should finish with `3 passed in …s`.
 
 ---
 
+### 6b · (optional) Anchor recent outputs
+```bash
+python3 src/anchor_outputs.py
+```
+Anchors a Merkle root for all new entries in `logs/output_log.jsonl` and appends the tx to `docs/ANCHORS.md`.
+
 ### You’re done 🎉
-The PoC proves: **directive bundle → hash → public blockchain → human-verifiable link**.
+The PoC proves: **directive bundle → hash → public blockchain → human-verifiable link**, and adds optional output provenance via Merkle-root anchoring.
 
 Next milestones are in `ROADMAP.md` – start with the validation tier and wallet field.
