@@ -15,9 +15,12 @@ Large Language Models (LLMs) are powerful tools, but they come with inherent ris
 
 **CANDELA is a model-agnostic—and more importantly, intelligence-agnostic—governance framework.** It acts as an external "Guardian" that applies the same rigorous standards of verification to all output, whether the author is human or machine.
 
-This Guardian enforces a clear, human-readable set of rules (a "Directive Scaffold") and uses blockchain anchoring to create a permanent, tamper-evident audit trail for those rules. The result is a fast, reliable, and transparent system for ensuring AI tools operate safely and predictably, without needing to alter their complex internal architecture.
+How it works (concise):
+- **Rules you can see:** A human-readable Directive Scaffold; its canonical hash is anchored on-chain for tamper evidence.
+- **Checks you can configure:** Regex + semantic (Mini‑BERT) with modes: `strict` (default, blocks until semantic passes), `sync_light` (returns fast, semantic runs in background), or `regex_only` (no semantic). Warm preload avoids cold-start lag; latency is logged.
+- **Proof you can show:** Every checked output is logged off-chain, batched into a Merkle root, and that root is anchored on-chain via `src/anchor_outputs.py`. You can later prove any specific output with its Merkle proof against the anchored root.
 
-In addition to anchoring the directive set itself, Candela now logs every checked output off-chain, batches them into Merkle roots, and anchors those roots on-chain via `src/anchor_outputs.py`. This keeps UX fast while giving verifiable proof of individual outputs when needed.
+This keeps the UX fast while preserving cryptographic, auditable provenance for both the rule-set and the outputs.
 
 
 

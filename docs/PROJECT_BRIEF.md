@@ -40,18 +40,22 @@ The core principles are:
 
 ## Current Status (v0.3 — Feb 2026)
 
-* **Guardian:** `src/guardian_runtime.py` provides regex + Mini‑BERT semantic checks with caching; every checked output is logged for audit.
-* **Directive set:** `src/directives_schema.json` (v3.2, 76 directives) — canonical SHA-256 `7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d`.
-* **Anchoring:**  
-  * Directive bundle hash anchored on Sepolia (`docs/ANCHORS.md`).  
-  * Output log batches anchored via Merkle roots using `src/anchor_outputs.py`.
-* **Docs/DOI:** OSF DOI 10.17605/OSF.IO/3S7BT; Tech Spec/README/Roadmap synced to v0.3; reviewer bundle available.
+* **Guardian:** Regex + Mini‑BERT semantic checks with caching (`src/guardian_runtime.py`). Modes: `strict` (default, blocks until semantic passes), `sync_light` (asynchronous semantic), `regex_only` (no semantic). Warm preload prevents first-call stalls; latency is logged.
+* **Directive set:** `src/directives_schema.json` (v3.2, 76 directives) — canonical SHA-256 `7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d`, anchored on Sepolia (`docs/ANCHORS.md`).
+* **Output provenance:** Every checked output is logged off-chain, batched into a Merkle root, and anchored on-chain via `src/anchor_outputs.py` (entries recorded in `docs/ANCHORS.md`). Individual outputs can be proven later via Merkle proof.
+* **Docs/DOI:** OSF DOI 10.17605/OSF.IO/3S7BT; Tech Spec/README/Roadmap aligned to v0.3; reviewer bundle available.
+
+## The Guardian (letter, spirit, receipt)
+
+1) **Letter of the law (explicit compliance).** Regex/structural rules act like non‑negotiable clauses; violations block immediately and the rule-set is anchored on-chain.  
+2) **Spirit of the law (semantic intent).** Mini‑BERT (`all-MiniLM-L6-v2`) reads context to catch evasive or malicious intent beyond keywords. Mode is configurable to balance security vs. throughput.  
+3) **Digital receipt (forensic proof).** Outputs stay off-chain but are logged, Merklized, and only the root is anchored. You can later reveal one output + its proof to show it existed unaltered at that time, without paying per-output gas or leaking content.
 
 ## Key Components (v0.3)
 
-1. **Guardian runtime:** `src/guardian_runtime.py` (regex + semantic, cached) calling `guardian_extended.py`/Mini‑BERT detector.
-2. **Directive schema:** `src/directives_schema.json` (v3.2) with hash anchored on-chain.
-3. **Output provenance:** `logs/output_log.jsonl` + `src/anchor_outputs.py` → Merkle root anchored on Sepolia.
+1. **Guardian runtime:** `src/guardian_runtime.py` (regex + semantic, cached, warm preload, modes).  
+2. **Directive schema:** `src/directives_schema.json` (v3.2) with hash anchored on-chain.  
+3. **Output provenance:** `logs/output_log.jsonl` + `src/anchor_outputs.py` → Merkle root anchored on Sepolia.  
 4. **Anchoring scripts:** `src/anchor_hash.py` (directives) and `src/anchor_outputs.py` (outputs).
 
 ---
