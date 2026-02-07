@@ -64,7 +64,7 @@ The key stages within the Guardian are:
 ### Performance Notes
 - Default runtime mode is `strict` (regex + semantic, blocking). `sync_light` (async semantic) and `regex_only` are opt-in via `config/guardian_scoring.yaml`.
 - Warm preload runs automatically to avoid first-request stall from Mini‑BERT/torch load.
-- Latency logs (`logs/latency_log.jsonl`) record fast-path and semantic timings; `latency_budget_ms` controls when to flag background work.\n*** End Patch
+- Latency logs (`logs/latency_log.jsonl`) record fast-path and semantic timings; `latency_budget_ms` controls when to flag background work.
 
 ---
 

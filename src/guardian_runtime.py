@@ -12,6 +12,7 @@ from typing import Dict, Tuple
 from .guardian_extended import guardian as _guardian_fast
 from .detectors.mini_semantic import semantic_block   # semantic detector
 from concurrent.futures import ThreadPoolExecutor
+from .directive_validation import validate_output as _validate_directives
 
 # ── config --------------------------------------------------------------
 CFG = yaml.safe_load(Path("config/guardian_scoring.yaml").read_text("utf-8"))
@@ -19,6 +20,12 @@ MODE        = CFG.get("mode", "strict")  # strict | sync_light | regex_only
 BUDGET_MS   = int(CFG.get("latency_budget_ms", 120))
 CACHE_TTL   = int(CFG.get("cache_ttl_s", 86400))
 THRESHOLD   = float(CFG.get("detectors", {}).get("mini_semantic", {}).get("threshold", 0.80))
+SEM_ENABLED = bool(CFG.get("detectors", {}).get("mini_semantic", {}).get("enabled", True))
+
+VAL_CFG = CFG.get("validation", {}) or {}
+ENFORCE_CONFIDENCE = bool(VAL_CFG.get("enforce_confidence_tag", False))
+ENFORCE_UNCERTAIN = bool(VAL_CFG.get("enforce_uncertain_tag", False))
+ENFORCE_MICROFORMATS = bool(VAL_CFG.get("enforce_microformats", True))
 
 DIRECTIVES_HASH  = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
 _cache: Dict[str, Tuple[float, dict]] = {}
@@ -71,7 +78,8 @@ def _warm_semantic():
         return
     try:
         # One dummy call to load model weights and allocations
-        semantic_block("warmup", THRESHOLD)
+        if SEM_ENABLED:
+            semantic_block("warmup", THRESHOLD)
         _PRELOAD_DONE = True
     except Exception:
         # Do not block startup if warmup fails
@@ -88,24 +96,36 @@ def guardian_chat(text: str) -> dict:
     t0 = time.perf_counter()
     res = _guardian_fast(text)
     dt_fast = (time.perf_counter() - t0) * 1_000
-    _set(k, res)
-    _log_output(text, res)
 
+    # strict mode blocks on semantic; sync_light returns quickly and may update later.
     dt_sem = None
-    if MODE == "strict":
+    if MODE == "strict" and SEM_ENABLED and res.get("passed", True):
         t1 = time.perf_counter()
         if semantic_block(text, THRESHOLD):
-            res = {"passed": False, "notes": ["semantic_block"]}
-            _set(k, res)
-            _log_output(text, res)
+            res = {"passed": False, "notes": ["semantic_block"], "violations": ["semantic_block"], "score": 0}
         dt_sem = (time.perf_counter() - t1) * 1_000
-    elif MODE == "sync_light":
+    elif MODE == "sync_light" and SEM_ENABLED and res.get("passed", True):
         threading.Thread(target=_bg_heavy_check, args=(text, k, THRESHOLD), daemon=True).start()
         if dt_fast > BUDGET_MS:
             res.setdefault("notes", []).append(f"background_pending:{int(dt_fast)}ms")
-    elif MODE == "regex_only":
-        pass  # skip semantic entirely
 
+    # Directive-criteria validations (structure-triggered to reduce false positives)
+    findings = _validate_directives(
+        text,
+        enforce_confidence_tag=ENFORCE_CONFIDENCE,
+        enforce_uncertain_tag=ENFORCE_UNCERTAIN,
+        enforce_microformats=ENFORCE_MICROFORMATS,
+    )
+    for f in findings:
+        if f.level == "violation":
+            res.setdefault("violations", []).append(f"directive_{f.key}")
+            res["passed"] = False
+            res.setdefault("score", 0)
+        else:
+            res.setdefault("notes", []).append(f"{f.key}:{f.message}")
+
+    _set(k, res)
+    _log_output(text, res)
     _log_latency(MODE, dt_fast, dt_sem, cached=False)
     return res
 

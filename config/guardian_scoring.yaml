@@ -8,3 +8,12 @@ detectors:
   mini_semantic:
     threshold: 0.75
     enabled: true
+
+# directive-criteria validation (v0.3)
+validation:
+  # If true, missing Confidence: High|Medium|Low becomes a hard block.
+  enforce_confidence_tag: false
+  # If true, missing [uncertain] becomes a hard block.
+  enforce_uncertain_tag: false
+  # If true, validate micro-directive formats only when output opts into their structure.
+  enforce_microformats: true

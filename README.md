@@ -29,6 +29,9 @@ Verification tools (CLI)
 Visuals
 - Mermaid diagrams of the Guardian flow and mode selection: see `docs/diagrams.md` (rendered on GitHub).
 
+Validation coverage
+- What is enforced vs. documented intent: `docs/VALIDATION_COVERAGE.md`
+
 
 
 > **The Core Idea:** By separating the rules (the *what*) from the model (the *how*), Candela makes AI governance explicit, auditable, and reliable.
