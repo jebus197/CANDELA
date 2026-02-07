@@ -31,6 +31,7 @@ Visuals
 
 Validation coverage
 - What is enforced vs. documented intent: `docs/VALIDATION_COVERAGE.md`
+- Exact directive counts/IDs (reviewer-friendly): `python3 src/report_directives.py`
 
 
 
