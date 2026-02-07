@@ -94,7 +94,7 @@ CANDELA is designed as a foundational technology for verifiable governance. Its 
     ```
 
 ### Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [DEVELOPER_NOTES.md](DEVELOPER_NOTES.md) and the [issues list](https://github.com/jebus197/CANDELA/issues).
 
 ### Licence
 MIT — see [LICENSE](LICENSE).

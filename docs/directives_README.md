@@ -45,6 +45,8 @@ A core feature of CANDELA is the use of **"micro-directives"** to make complex o
 
 The following tables illustrate how micro-directives are structured. The "Validation check (v0.1 PoC)" column indicates how these might be simply checked in the current PoC, with more sophisticated validation planned for future versions.
 
+Reviewer note (v0.3): These tables are illustrative. For the exact list of enforced checks in v0.3, see [VALIDATION_COVERAGE.md](VALIDATION_COVERAGE.md).
+
 **Example 1: Associative Reasoning (Decomposition of a complex cognitive task - ID 14)**
 
 | Sub-ID | Step                                         | Micro-Directive (from schema)                                                                 | Validation check (v0.1 PoC Example) |
@@ -58,8 +60,8 @@ The following tables illustrate how micro-directives are structured. The "Valida
 | Sub-ID | Step                            | Micro-Directive (from schema)                                                                 | Validation check (v0.1 PoC Example) |
 | :----- | :------------------------------ | :-------------------------------------------------------------------------------------------- | :---------------------------------- |
 | 24a    | Restate the problem (≤ 15 words)  | "First-Principles – step 1: restate the problem in ≤15 words, no jargon."                   | Word count of restatement           |
-| 24b    | List two fundamental facts      | "First-Principles – step 2: list the two most fundamental facts involved."                  | Checks for two distinct facts/bullets |
-| 24c    | Build answer from facts         | "First-Principles – step 3: build the answer from those facts in clear language."             | Checks for presence of fact keywords in answer |
+| 24b    | List two fundamental facts      | "First-Principles – step 2: list the two most fundamental facts involved."                  | Exactly two bullet points           |
+| 24c    | Build answer from facts         | "First-Principles – step 3: build the answer from those facts in clear language."             | Word count <= 100 words (section)   |
 
 *Note: The `validation_criteria` field in `directives_schema.json` provides more specific intended checks for developers.*
 
