@@ -4,7 +4,7 @@ Current score (self-assessed): **7.5 / 10** (Research Beta v0.3; strict-by-defau
 
 Strengths
 - Directive hash anchored on-chain; output provenance via log → Merkle root → on-chain anchor.
-- Semantic guard integrated (Mini-BERT), modes configurable (strict default), warm preload, latency logging.
+- Semantic guard integrated (MiniLM / all-MiniLM-L6-v2), modes configurable (strict default), warm preload, latency logging.
 - Tooling: verify_output (Merkle proof), latency_stats, reviewer bundle.
 - Docs aligned (README, Tech_Spec, Project_Brief, Roadmap, Anchors).
 

@@ -2,7 +2,7 @@
 guardian_runtime.py
 Fast governance wrapper with:
 • response cache
-• async semantic detector (Mini-BERT)
+• async semantic detector (MiniLM / all-MiniLM-L6-v2)
 Safe: standalone file, no edits needed elsewhere except import hook below.
 """
 from __future__ import annotations

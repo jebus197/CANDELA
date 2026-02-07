@@ -40,7 +40,7 @@ The core principles are:
 
 ## Current Status (v0.3 — Feb 2026)
 
-* **Guardian:** Regex + Mini‑BERT semantic checks with caching (`src/guardian_runtime.py`). Modes: `strict` (default, blocks until semantic passes), `sync_light` (asynchronous semantic), `regex_only` (no semantic). Warm preload prevents first-call stalls; latency is logged.
+* **Guardian:** Regex + MiniLM (`all-MiniLM-L6-v2`) semantic checks with caching (`src/guardian_runtime.py`). Modes: `strict` (default, blocks until semantic passes), `sync_light` (asynchronous semantic), `regex_only` (no semantic). Warm preload prevents first-call stalls; latency is logged.
 * **Directive set:** `src/directives_schema.json` (v3.2, 76 directives) — canonical SHA-256 `7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d`, anchored on Sepolia (`docs/ANCHORS.md`).
 * **Output provenance:** Every checked output is logged off-chain, batched into a Merkle root, and anchored on-chain via `src/anchor_outputs.py` (entries recorded in `docs/ANCHORS.md`). Individual outputs can be proven later via Merkle proof.
 * **Docs/DOI:** OSF DOI 10.17605/OSF.IO/3S7BT; Tech Spec/README/Roadmap aligned to v0.3; reviewer bundle available.
@@ -48,7 +48,7 @@ The core principles are:
 ## The Guardian (letter, spirit, receipt)
 
 1) **Letter of the law (explicit compliance).** Regex/structural rules act like non‑negotiable clauses; violations block immediately and the rule-set is anchored on-chain.  
-2) **Spirit of the law (semantic intent).** Mini‑BERT (`all-MiniLM-L6-v2`) reads context to catch evasive or malicious intent beyond keywords. Mode is configurable to balance security vs. throughput.  
+2) **Spirit of the law (semantic intent).** MiniLM (`all-MiniLM-L6-v2`) reads context to catch evasive or malicious intent beyond keywords. Mode is configurable to balance security vs. throughput.  
 3) **Digital receipt (forensic proof).** Outputs stay off-chain but are logged, Merklized, and only the root is anchored. You can later reveal one output + its proof to show it existed unaltered at that time, without paying per-output gas or leaking content.
 
 ## Key Components (v0.3)
@@ -65,7 +65,7 @@ The core principles are:
 | Version                   | Key Milestone                                                                                | Target      |
 | :------------------------ | :------------------------------------------------------------------------------------------- | :---------- |
 | **v0.2 (2025)**           | Performance optimisation; caching; latency budget keys.                                     | Completed   |
-| **v0.3 (Feb 2026)**       | Semantic guard (Mini‑BERT), directive hash anchored, output Merkle anchoring, reviewer bundle. | Released    |
+| **v0.3 (Feb 2026)**       | Semantic guard (MiniLM), directive hash anchored, output Merkle anchoring, reviewer bundle. | Released    |
 | **v0.4 (2026)**           | PoC stabilisation/pilot prep; CI, service/API hardening, proof/verify tooling.               | Planned     |
 | **v1.0+**                 | Prompt-injection defence, service layer/GUI, tokenised incentives (post-v1).                | Planned     |
 

@@ -32,7 +32,7 @@ Verification: `python3 -m pytest tests` + latency sample from `src/guardian_runt
 ## Phase 0.3  — Semantic Guard & Release ✅ (Released v0.3 Feb 2026)  
 | Task | Status | Notes |
 |------|--------|-------|
-| Mini‑BERT semantic detector | Complete | `src/detectors/mini_semantic.py`, wired into runtime |
+| MiniLM semantic detector | Complete | `src/detectors/mini_semantic.py`, wired into runtime |
 | Dependency update | Complete | `sentence-transformers`, `torch` added |
 | Release & docs | Complete | v0.3 tag, Tech Spec v0.3, README/Getting Started |
 | Anchoring | Complete | Directive bundle hash anchored on Sepolia (docs/ANCHORS.md) |

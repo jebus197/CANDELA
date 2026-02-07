@@ -101,27 +101,30 @@ def validate_output(
     # Enforced only when output opts into the structure (marker-based trigger).
     # ------------------------------------------------------------------
     if enforce_microformats:
-        lower = joined.lower()
+        def _starts_with_label(line: str, label: str) -> bool:
+            # Case-insensitive by design to reduce surprising behavior.
+            return line.lstrip().lower().startswith(label)
 
         # ID 6 (Logical-Extension): triggered by Premise:/Inference:
-        if any(ln.lstrip().startswith("Premise:") or ln.lstrip().startswith("Inference:") for ln in ls):
-            premise_lines = [ln for ln in ls if ln.lstrip().startswith("Premise:")]
-            infer_lines = [ln for ln in ls if ln.lstrip().startswith("Inference:")]
+        if any(_starts_with_label(ln, "premise:") or _starts_with_label(ln, "inference:") for ln in ls):
+            premise_lines = [ln for ln in ls if _starts_with_label(ln, "premise:")]
+            infer_lines = [ln for ln in ls if _starts_with_label(ln, "inference:")]
             if not premise_lines:
                 findings.append(Finding("6a", "violation", "Missing line starting with 'Premise:'."))
             if not infer_lines:
                 findings.append(Finding("6b", "violation", "Missing line starting with 'Inference:'."))
             if infer_lines:
                 # Apply the <=20 words + ends-with-period to the first Inference line's content.
-                content = infer_lines[0].split("Inference:", 1)[1].strip()
+                _, _, content = infer_lines[0].partition(":")
+                content = content.strip()
                 if _word_count(content) > 20:
                     findings.append(Finding("6c", "violation", "Inference content exceeds 20 words."))
                 if content and not content.endswith("."):
                     findings.append(Finding("6c", "violation", "Inference content must end with a period."))
 
         # ID 14 (Associative Reasoning): triggered by Related:
-        if any(ln.lstrip().startswith("Related:") for ln in ls):
-            idxs = [i for i, ln in enumerate(ls) if ln.lstrip().startswith("Related:")]
+        if any(_starts_with_label(ln, "related:") for ln in ls):
+            idxs = [i for i, ln in enumerate(ls) if _starts_with_label(ln, "related:")]
             i0 = idxs[0]
             # Next two non-empty lines after Related are treated as steps b and c.
             tail = [ln.strip() for ln in ls[i0 + 1 :] if ln.strip()]
@@ -138,16 +141,17 @@ def validate_output(
 
         # ID 24 (First-Principles): triggered by explicit marker in output
         # (avoid false positives on arbitrary bullet lists)
-        if "first-principles" in lower:
-            # Restatement line: first non-empty line after a potential header
-            nonempty = [ln.strip() for ln in ls if ln.strip()]
+        fp_idxs = [i for i, ln in enumerate(ls) if ln.lstrip().lower().startswith("first-principles")]
+        if fp_idxs:
+            # Treat the First-Principles content as the section after the marker line.
+            i0 = fp_idxs[0]
+            section = ls[i0 + 1 :]
+            nonempty = [ln.strip() for ln in section if ln.strip()]
             rest = nonempty[0] if nonempty else ""
-            if rest.lower().startswith("first-principles"):
-                rest = nonempty[1] if len(nonempty) > 1 else ""
             if rest and _word_count(rest) > 15:
                 findings.append(Finding("24a", "violation", "Restatement exceeds 15 words."))
 
-            bullets = [ln.strip() for ln in ls if re.match(r"^[-*]\s+", ln.strip())]
+            bullets = [ln.strip() for ln in section if re.match(r"^[-*]\s+", ln.strip())]
             if len(bullets) != 2:
                 findings.append(Finding("24b", "violation", "Expected exactly two bullet points."))
 
@@ -156,4 +160,3 @@ def validate_output(
                 findings.append(Finding("24c", "violation", "First-principles output exceeds 100 words."))
 
     return findings
-

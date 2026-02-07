@@ -52,7 +52,7 @@ The key stages within the Guardian are:
 | `src/directives_schema.json`                       | The machine-readable directive list (v3.2, 76 items, strict JSON format).                     |
 | `src/guardian_prototype.py`                        | Core PoC Guardian (hashing, anchoring, basic checks).                                         |
 | `src/guardian_extended.py`                         | Regex guard + lazy hand-off to prototype.                                                    |
-| `src/guardian_runtime.py`                          | Cached runtime wrapper + async Mini‑BERT hook + output logging.                              |
+| `src/guardian_runtime.py`                          | Cached runtime wrapper + async MiniLM hook + output logging.                                 |
 | `logs/output_log.jsonl`                            | Append-only log of every checked output (input hash, verdict, timestamp).                    |
 | `src/anchor_outputs.py`                            | Batches output log into a Merkle root and anchors it on-chain.                               |
 | `src/verify_output.py`                             | Produces a Merkle proof for a specific log entry.                                            |
@@ -63,7 +63,7 @@ The key stages within the Guardian are:
 
 ### Performance Notes
 - Default runtime mode is `strict` (regex + semantic, blocking). `sync_light` (async semantic) and `regex_only` are opt-in via `config/guardian_scoring.yaml`.
-- Warm preload runs automatically to avoid first-request stall from Mini‑BERT/torch load.
+- Warm preload runs automatically to avoid first-request stall from MiniLM/torch load.
 - Latency logs (`logs/latency_log.jsonl`) record fast-path and semantic timings; `latency_budget_ms` controls when to flag background work.
 
 ---

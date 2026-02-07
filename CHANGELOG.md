@@ -19,7 +19,7 @@ All notable changes to this project are documented here.
 - README wording/UX notes; roadmap phases updated.
 - requirements.txt pinned torch for semantic guard.
 ### Removed
-- Duplicate Mini‑BERT files (`src/mini_semantic.py`, `src/src/detectors/mini_semantic.py`).
+- Duplicate semantic detector files removed (MiniLM / `all-MiniLM-L6-v2`).
 
 ## [Unreleased]
 ### Planned

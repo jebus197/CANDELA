@@ -17,7 +17,7 @@ Large AI models (including LLMs) are powerful tools, but they come with inherent
 
 How it works (concise):
 - **Rules you can see:** A human-readable Directive Scaffold; its canonical hash is anchored on-chain for tamper evidence.
-- **Checks you can configure:** Regex + semantic (Mini‑BERT) with modes: `strict` (default, blocks until semantic passes), `sync_light` (returns fast, semantic runs in background), or `regex_only` (no semantic). Warm preload avoids cold-start lag; latency is logged.
+- **Checks you can configure:** Regex + semantic (MiniLM / all-MiniLM-L6-v2) with modes: `strict` (default, blocks until semantic passes), `sync_light` (returns fast, semantic runs in background), or `regex_only` (no semantic). Warm preload avoids cold-start lag; latency is logged.
 - **Proof you can show:** Every checked output is logged off-chain, batched into a Merkle root, and that root is anchored on-chain via `src/anchor_outputs.py`. You can later prove any specific output with its Merkle proof against the anchored root.
 
 This keeps the UX fast while preserving cryptographic, auditable provenance for both the rule-set and the outputs.
@@ -45,7 +45,7 @@ This project is evolving through distinct phases, moving from a robust foundatio
 #### ✅ **Phase 0: The Foundation (Complete)**
 
 The initial goal was to prove the core concept: that an external governance layer could verifiably enforce a set of rules. This phase delivered:
-* A **Core Guardian** capable of regex and semantic checks (Mini‑BERT detector in `src/detectors/mini_semantic.py`).
+* A **Core Guardian** capable of regex and semantic checks (MiniLM detector in `src/detectors/mini_semantic.py`).
 * The first **On-Chain Anchoring** of the directive set on the Sepolia testnet, creating a permanent, cryptographic proof of the rules.
 * A full **Reproducibility Suite** (`pytest`) to ensure the integrity of the framework can be independently verified.
 

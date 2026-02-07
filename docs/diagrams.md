@@ -23,7 +23,7 @@ sequenceDiagram
     alt regex fail
         G-->>U: block (regex)
     else regex pass
-        G->>S: semantic (Mini-BERT)
+        G->>S: semantic (MiniLM)
         S-->>G: pass/fail
         alt strict mode
             G-->>U: block if fail

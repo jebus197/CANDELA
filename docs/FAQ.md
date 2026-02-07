@@ -92,7 +92,7 @@ Yes, CANDELA is an open-source project licensed under the MIT License. We encour
 This is a key reviewer question, and the answer is deliberately explicit.
 
 In v0.3 (Research Beta), CANDELA enforces:
-* A fast regex screen and a semantic screen (Mini-BERT), with strict mode as the default.
+* A fast regex screen and a semantic screen (MiniLM / all-MiniLM-L6-v2), with strict mode as the default.
 * A subset of directives with objective, machine-checkable `validation_criteria` (implemented without changing the anchored rule-set).
 
 For the exact coverage list (what is enforced vs. documented intent), see:

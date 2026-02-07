@@ -26,7 +26,7 @@ Micro-directive groups (same `id`, different `sub`):
 ## Enforcement layers
 Always-on enforcement (independent of `validation_criteria`):
 - Regex screen: `src/guardian_extended.py` (`hex_key`, `dob`, profanity)
-- Semantic screen: `src/detectors/mini_semantic.py` (Mini-BERT similarity), controlled by `config/guardian_scoring.yaml`
+- Semantic screen: `src/detectors/mini_semantic.py` (MiniLM / `all-MiniLM-L6-v2` via sentence-transformers), controlled by `config/guardian_scoring.yaml`
 
 Directive-criteria enforcement (implemented in v0.3):
 - Implemented in: `src/directive_validation.py`
@@ -50,22 +50,22 @@ Legend:
   - ENFORCED if `validation.enforce_uncertain_tag: true`
 
 ### Logical-Extension (ID 6, CONDITIONAL)
-Triggered only if output contains a line starting with `Premise:` or `Inference:`.
+Triggered only if output contains a line starting with `Premise:` or `Inference:` (case-insensitive).
 - 6a ENFORCED: must include `Premise:` line
 - 6b ENFORCED: must include `Inference:` line
 - 6c ENFORCED: `Inference:` content must be <= 20 words and end with a period
 
 ### Associative Reasoning (ID 14, CONDITIONAL)
-Triggered only if output contains a line starting with `Related:`.
+Triggered only if output contains a line starting with `Related:` (case-insensitive).
 - 14a ENFORCED: `Related:` line must exist
 - 14b ENFORCED: next non-empty line after `Related:` must be <= 25 words
 - 14c ENFORCED: next non-empty line after that must be <= 30 words
 
 ### First-Principles (ID 24, CONDITIONAL)
-Triggered only if output contains the literal marker `First-Principles` (case-insensitive).
+Triggered only if output contains a line starting with `First-Principles` (case-insensitive).
 - 24a ENFORCED: restatement line must be <= 15 words
-- 24b ENFORCED: exactly two bullet points (lines starting with `-` or `*`)
-- 24c ENFORCED: total output must be <= 100 words (plain-language heuristics are not applied in v0.3)
+- 24b ENFORCED: exactly two bullet points (lines starting with `-` or `*`) in the First-Principles section
+- 24c ENFORCED: First-Principles section must be <= 100 words (plain-language heuristics are not applied in v0.3)
 
 ### Explicit criteria present but not fully machine-checkable (v0.3)
 These are intentionally NOT enforced yet because they require additional runtime signals (confidence scores, trigger conditions) or subjective judgment:
@@ -79,4 +79,3 @@ These are intentionally NOT enforced yet because they require additional runtime
 ## Reviewer-facing takeaway
 - v0.3 is explicit about what is enforced today vs. what is roadmap intent.
 - The canonical directive bundle is anchored and verified; enforcement coverage is implemented for the objective criteria subset without changing the anchored rule-set.
-

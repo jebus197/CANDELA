@@ -19,7 +19,7 @@ This is the **canonical** coordination file. If there is a conflict between othe
 ---
 
 ## Current status (sandbox)
-- Programmatic fixes completed in sandbox (Guardian wiring, hash alignment, Mini‑BERT de‑duplication).
+- Programmatic fixes completed in sandbox (Guardian wiring, hash alignment, MiniLM semantic detector de-duplication).
 - Tests and stress checks run; pass.
 - Anchoring executed successfully. Canonical hash 7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d anchored on Sepolia tx 0x2653a983ce75c31de39ab4b53c01fada024aac170c2fc99b7845f8df4702db70.
 

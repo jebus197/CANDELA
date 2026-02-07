@@ -17,6 +17,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 
+DEFAULT_SCHEMA_PATH = (Path(__file__).resolve().parents[1] / "src" / "directives_schema.json")
+
+
 def _load_directives(schema_path: Path) -> List[Dict[str, Any]]:
     raw = json.loads(schema_path.read_text(encoding="utf-8"))
     if isinstance(raw, dict) and "directives" in raw:
@@ -77,8 +80,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--path",
-        default="src/directives_schema.json",
-        help="Path to directives_schema.json (default: src/directives_schema.json)",
+        default=str(DEFAULT_SCHEMA_PATH),
+        help="Path to directives_schema.json (default: <repo>/src/directives_schema.json)",
     )
     parser.add_argument(
         "--format",
@@ -123,7 +126,8 @@ def main() -> int:
         payload = {
             "schema_path": str(schema_path),
             "total_directive_objects": total_objects,
-            "unique_numeric_ids": unique_numeric_id_count,
+            "unique_numeric_id_count": unique_numeric_id_count,
+            "unique_numeric_ids": unique_numeric_ids,
             "validation_real": real_count,
             "validation_na": na_count,
             "validation_missing": missing_count,
