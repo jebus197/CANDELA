@@ -6,7 +6,7 @@ This FAQ addresses common questions about the CANDELA project's methodology, goa
 
 ### 1. What problem does CANDELA solve?
 
-Large Language Models (LLMs) like GPT can be powerful, but they sometimes produce incorrect information ("hallucinate"), drift from their original instructions, or give inconsistent answers. It's also often unclear *why* they respond a certain way, as their internal workings can be like a "black box." This lack of reliability and transparency makes it risky to use them for important tasks.
+AI models (including Large Language Models (LLMs) like GPT) can be powerful, but they sometimes produce incorrect information ("hallucinate"), drift from their original instructions, or give inconsistent answers. It's also often unclear *why* they respond a certain way, as their internal workings can be like a "black box." This lack of reliability and transparency makes it risky to use them for important tasks.
 
 CANDELA aims to solve this by creating a verifiable governance layer. It uses a "Directive Guardian" (a software intermediary) to ensure an LLM follows a clear, human-readable set of rules (the "Directive Scaffold"). The integrity of this rule-set is secured by anchoring its cryptographic hash (a unique digital fingerprint) on a public blockchain *before* the LLM generates any output.
 
@@ -87,25 +87,38 @@ This aims to create a healthier digital ecosystem where quality is more easily i
 
 Yes, CANDELA is an open-source project licensed under the MIT License. We encourage community review, feedback, and contributions. All core documents and PoC code are available in our [GitHub repository](https://github.com/jebus197/CANDELA). ---
 
-### 9. What is the current status and roadmap for CANDELA?
+### 9. What does CANDELA actually enforce today?
 
-As of May 2025, CANDELA is at the **Version 0.1 Proof-of-Concept (PoC)** stage.
-* We have defined the initial directive set (v3.2, 76 directives) in `src/directives_schema.json`.
-* The PoC script (`src/guardian_poc_v0.1.py`) demonstrates loading directives, generating their SHA-256 hash, and simulating the Guardian workflow.
-* The hash for the v3.2 directive set (`3cf5a9178cf726ed33ba0754fca66003ec469671a7cb799534052dccc6bddffa`) has been successfully generated and symbolically anchored manually on a testnet for PoC demonstration.
+This is a key reviewer question, and the answer is deliberately explicit.
 
-Key next steps, as outlined in our [ROADMAP.md](ROADMAP.md), include:
-* Developing the MVP of the Guardian software with real LLM API integration.
-* Implementing automated testnet blockchain anchoring and verification of the directive set.
-* Building out the "auto" tier validation logic for core micro-directives.
-* Conducting initial empirical testing.
+In v0.3 (Research Beta), CANDELA enforces:
+* A fast regex screen and a semantic screen (Mini-BERT), with strict mode as the default.
+* A subset of directives with objective, machine-checkable `validation_criteria` (implemented without changing the anchored rule-set).
+
+For the exact coverage list (what is enforced vs. documented intent), see:
+* `VALIDATION_COVERAGE.md`
 
 ---
 
-### 10. How can I get involved or learn more?
+### 10. What is the current status and roadmap for CANDELA?
+
+As of Feb 2026, CANDELA is at **v0.3 (Research Beta)**.
+* The directive set (v3.2) is defined in `src/directives_schema.json` and its canonical SHA-256 is anchored on Sepolia (see `ANCHORS.md`).
+* The runtime Guardian supports regex + semantic checks with strict mode as the default (`guardian_runtime.py`).
+* Outputs are logged off-chain and batched into Merkle roots that can be anchored on-chain for auditability (`anchor_outputs.py`).
+
+Key next steps, as outlined in our [ROADMAP.md](ROADMAP.md), include:
+* Expanding directive enforcement coverage (more objective rules, fewer "N/A").
+* Publishing benchmark evidence (p50/p95 latency, strict vs sync_light) and hardening the service layer.
+* Building a reviewer-friendly proof UX for output verification (Merkle proofs against anchored roots).
+
+---
+
+### 11. How can I get involved or learn more?
 
 * **Explore our GitHub Repository:** [https://github.com/jebus197/CANDELA](https://github.com/jebus197/CANDELA) * Read the [Project Brief](docs/PROJECT_BRIEF.md) and [Technical Specification](TECH_SPEC.md).
-* Review the [Directive Schema Guide](docs/directives_README.md).
+* Read the [Project Brief](PROJECT_BRIEF.md) and [Technical Specification](Tech_Spec.md).
+* Review the [Directive Schema Guide](directives_README.md).
 * Check the [Issues Tab](https://github.com/jebus197/CANDELA/issues) on GitHub for current tasks, to report bugs, or to suggest features. * *(A Discord or community forum link will be added here once established).*
 
 We welcome feedback and collaboration as we develop CANDELA further!
