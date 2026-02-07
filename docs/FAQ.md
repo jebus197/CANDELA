@@ -40,7 +40,7 @@ Combining CANDELA's pre-execution rule verification with post-execution logging 
 
 The blockchain is used for its core properties of **immutability and transparency,** not for cryptocurrency purposes.
 
-1.  **Immutability:** Once the hash (unique fingerprint) of the `directives_schema.json` file is recorded on a public blockchain (like the Polygon Mumbai or Ethereum Sepolia testnets for our PoC), it cannot be secretly altered or deleted.
+1.  **Immutability:** Once the hash (unique fingerprint) of the `directives_schema.json` file is recorded on a public blockchain (e.g. the Ethereum Sepolia testnet used for v0.3), it cannot be secretly altered or deleted.
 2.  **Transparency & Verifiability:** Anyone can independently take the official `directives_schema.json` from the CANDELA repository, calculate its SHA-256 hash, and compare it to the hash anchored on the blockchain. This proves that the rule-set being used by the Guardian (which performs this check at runtime) is the authentic, agreed-upon version.
 
 This prevents "prompt drift" or unauthorized changes to the AI's governing rules from going undetected.
@@ -85,7 +85,7 @@ This aims to create a healthier digital ecosystem where quality is more easily i
 
 ### 8. Is CANDELA open source?
 
-Yes, CANDELA is an open-source project licensed under the MIT License. We encourage community review, feedback, and contributions. All core documents and PoC code are available in our [GitHub repository](https://github.com/jebus197/CANDELA). ---
+Yes, CANDELA is an open-source project licensed under the MIT License. We encourage community review, feedback, and contributions. All core documents and source code are available in our [GitHub repository](https://github.com/jebus197/CANDELA).
 
 ### 9. What does CANDELA actually enforce today?
 
@@ -96,7 +96,7 @@ In v0.3 (Research Beta), CANDELA enforces:
 * A subset of directives with objective, machine-checkable `validation_criteria` (implemented without changing the anchored rule-set).
 
 For the exact coverage list (what is enforced vs. documented intent), see:
-* `VALIDATION_COVERAGE.md`
+* [VALIDATION_COVERAGE.md](VALIDATION_COVERAGE.md)
 
 ---
 
@@ -116,10 +116,13 @@ Key next steps, as outlined in our [ROADMAP.md](ROADMAP.md), include:
 
 ### 11. How can I get involved or learn more?
 
-* **Explore our GitHub Repository:** [https://github.com/jebus197/CANDELA](https://github.com/jebus197/CANDELA) * Read the [Project Brief](docs/PROJECT_BRIEF.md) and [Technical Specification](TECH_SPEC.md).
-* Read the [Project Brief](PROJECT_BRIEF.md) and [Technical Specification](Tech_Spec.md).
+* Explore our GitHub Repository: [https://github.com/jebus197/CANDELA](https://github.com/jebus197/CANDELA)
+* Read the [Project Brief](PROJECT_BRIEF.md).
+* Read the [Technical Specification](Tech_Spec.md).
 * Review the [Directive Schema Guide](directives_README.md).
-* Check the [Issues Tab](https://github.com/jebus197/CANDELA/issues) on GitHub for current tasks, to report bugs, or to suggest features. * *(A Discord or community forum link will be added here once established).*
+* Review the validation coverage list: [VALIDATION_COVERAGE.md](VALIDATION_COVERAGE.md)
+* Check the Issues tab on GitHub for current tasks, to report bugs, or to suggest features: [https://github.com/jebus197/CANDELA/issues](https://github.com/jebus197/CANDELA/issues)
+* (A Discord or community forum link will be added here once established.)
 
 We welcome feedback and collaboration as we develop CANDELA further!
 
