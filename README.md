@@ -1,4 +1,4 @@
-# CANDELA
+# CANDELA (Research Beta v0.3)
 
 **Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 

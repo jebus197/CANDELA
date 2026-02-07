@@ -1,6 +1,6 @@
 # Candela Readiness Scorecard (v0.3)
 
-Current score (self-assessed): **7.5 / 10**
+Current score (self-assessed): **7.5 / 10** (Research Beta v0.3; strict-by-default, async opt-in)
 
 Strengths
 - Directive hash anchored on-chain; output provenance via log → Merkle root → on-chain anchor.
