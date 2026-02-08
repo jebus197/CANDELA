@@ -1,4 +1,4 @@
-# Demo Model Wiring (Reviewer-Friendly)
+# Model Integration (Reviewer-Friendly Demo)
 
 This is an optional demo that shows CANDELA actively checking a model's output:
 
@@ -8,6 +8,18 @@ This is an optional demo that shows CANDELA actively checking a model's output:
 4. (Optional) CANDELA anchors a Merkle root of the output log batch on Sepolia.
 
 This keeps the demo simple and avoids "you must know the internals" reviewer friction.
+
+## PoC design choices (why this looks the way it does)
+
+- CANDELA is a demo/PoC. The goal is to show the core value proposition quickly:
+  an external Guardian can apply explicit checks, produce audit logs, and support
+  tamper-evident anchoring.
+- The model is optional. This repo does not require a model to demonstrate
+  governance and anchoring. The model integration demo exists so reviewers can
+  see CANDELA monitoring generated output in real time.
+- The default (baseline) ruleset is small and anchored. Optional ruleset packs
+  are available via `--ruleset` to demonstrate extensibility without forcing a
+  multiple-choice setup step for first-time reviewers.
 
 ## Recommended demo model (CPU-friendly)
 

@@ -34,7 +34,7 @@ Optional demo ruleset packs
 
 Visuals
 - Mermaid diagrams of the Guardian flow and mode selection: see `docs/diagrams.md` (rendered on GitHub).
-- Optional demo wiring (model generates output, CANDELA checks it): `docs/DEMO_MODEL_WIRING.md`
+- Optional demo wiring (model generates output, CANDELA checks it): `docs/MODEL_INTEGRATION.md`
 
 Validation coverage
 - What is enforced (BLOCK vs WARN) in the current enterprise ruleset (E1.0): `docs/VALIDATION_COVERAGE.md`
