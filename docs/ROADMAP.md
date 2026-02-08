@@ -10,7 +10,7 @@ Legend
 | Deliverable | How it was implemented |
 |-------------|------------------------|
 | Core Guardian (regex + directive scoring) | `src/guardian_extended.py` |
-| Directive set v3.2 (76 rules) | `src/directives_schema.json` + Sepolia anchor (`docs/ANCHORS.md`) |
+| Enterprise ruleset E1.0 (example) | `src/directives_schema.json` + Sepolia anchor (`docs/ANCHORS.md`) |
 | Reproducibility tests | `tests/test_regex_guard.py`, `test_directive_schema.py` |
 | Public DOI + OSF landing | OSF project `10.17605/OSF.IO/3S7BT`, README badge |
 | **Setup hint** | Recommended: `python -m venv venv && source venv/bin/activate` |
@@ -117,10 +117,8 @@ Multisig contract controlling directive hash anchor; community vote for rule upd
 
 ---
 
-## Cryptographic Provenance (reference)  
-Anchored directive hash: `7b8d69ce…c73d`  
-Sepolia tx: `0x2653a983ce75c31de39ab4b53c01fada024aac170c2fc99b7845f8df4702db70`  
-Reproducibility test hash: `7b8d69ce…c73d`
+## Cryptographic Provenance (reference)
+See `docs/ANCHORS.md` for the current anchored ruleset hash and transaction(s).
 
 ---
 

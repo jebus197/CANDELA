@@ -93,8 +93,16 @@ entry = (
     f"→ `{root_hex}` → [{tx_hash.hex()}](https://sepolia.etherscan.io/tx/{tx_hash.hex()})\n"
 )
 ANCHOR_LOG.touch(exist_ok=True)
-with ANCHOR_LOG.open("a", encoding="utf-8") as f:
-    f.write(entry)
+existing = ANCHOR_LOG.read_text(encoding="utf-8")
+if entry not in existing:
+    marker = "## Output batch anchors"
+    if marker in existing:
+        head, tail = existing.split(marker, 1)
+        new_tail = marker + "\n\n" + entry + tail.lstrip("\n")
+        ANCHOR_LOG.write_text(head + new_tail, encoding="utf-8")
+    else:
+        with ANCHOR_LOG.open("a", encoding="utf-8") as f:
+            f.write(entry)
 
 state["anchored_lines"] = start + len(new_lines)
 STATE_FILE.write_text(json.dumps(state, indent=2))

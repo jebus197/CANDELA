@@ -49,7 +49,7 @@ The key stages within the Guardian are:
 | `docs/directives_README.md`                        | Explains the structure of the directive schema and the micro-directive strategy.                |
 | `docs/example_directives_schema_annotated.jsonc`   | A commented version of the schema with headings for easier human understanding (not for runtime). |
 | `src/`                                             | Directory for source code:                                                                    |
-| `src/directives_schema.json`                       | The machine-readable directive list (v3.2, 76 items, strict JSON format).                     |
+| `src/directives_schema.json`                       | The anchored enterprise ruleset (E1.0, schema-driven checks).                                |
 | `src/guardian_prototype.py`                        | Core PoC Guardian (hashing, anchoring, basic checks).                                         |
 | `src/guardian_extended.py`                         | Regex guard + lazy hand-off to prototype.                                                    |
 | `src/guardian_runtime.py`                          | Cached runtime wrapper + async MiniLM hook + output logging.                                 |
@@ -94,12 +94,12 @@ The key stages within the Guardian are:
 | :--------------------------------------- | :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. Load Directives & Compute Local Hash  | `_load_and_hash_directives()`      | Loads `src/directives_schema.json`, computes SHA-256. Includes basic error handling.                                                            |
 | 2. Verify Directive Set Integrity        | `_verify_directive_set_integrity()`| **CRITICAL STUB.** Currently simulates success if directives load. MVP: Must query blockchain for canonical hash & compare.                     |
-| 3. Anchor Verified Directive Bundle Hash | `_anchor_to_blockchain()`          | **MOCK.** Simulates anchoring `self.directive_bundle_hash`. MVP: Implement real testnet transaction.                                             |
+| 3. Anchor Verified Directive Bundle Hash | `src/anchor_hash.py`               | Live Sepolia transaction embedding the canonical SHA-256 of `src/directives_schema.json`.                                                       |
 | 4. Construct Model Prompt                | `_construct_llm_prompt()`          | Prepends core directives (e.g., IDs 1-3) to user input. MVP: Needs more sophisticated directive selection & token management.                      |
 | 5. Call Model API                        | `_call_llm_api()`                  | **MOCK.** Simulates model call, returns cycling responses. MVP: Implement real HTTP POST to chosen model API.                                      |
 | 6. Validate Model Output                 | `_validate_llm_output()`           | **VERY BASIC POC.** Illustrative checks for "Confidence:" tag and one micro-directive structure. MVP: Implement checks for all "auto" tier directives. |
 | 7. Retry Loop for Validation             | Loop in `process_user_request()`   | Basic retry if validation issues found. MVP: Refine regeneration prompt.                                                                         |
-| 8. Anchor I/O Bundle Hash                | `_anchor_to_blockchain()`          | **MOCK.** Simulates anchoring hash of (prompt, response, issues, directive_hash). MVP: Implement real testnet transaction for audit trail.         |
+| 8. Anchor I/O Bundle Hash                | `src/anchor_outputs.py`            | Batches output log lines into a Merkle root and anchors only the root on Sepolia (fast UX, low cost).                                             |
 
 ---
 

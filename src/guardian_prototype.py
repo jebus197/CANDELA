@@ -11,21 +11,30 @@ No existing functionality has been removed.
 """
 
 from __future__ import annotations
-import json, hashlib, pathlib
+import json, hashlib, pathlib, re
 from typing import Dict
 
 # ── paths --------------------------------------------------------------
 ROOT          = pathlib.Path(__file__).resolve().parents[1]
 DIRECTIVE_PATH = ROOT / "src" / "directives_schema.json"
+ANCHORS_PATH = ROOT / "docs" / "ANCHORS.md"
 
 # ── core helpers -------------------------------------------------------
-def _load_directives() -> list[Dict]:
+def _load_directives() -> object:
     with DIRECTIVE_PATH.open("r", encoding="utf-8") as f:
         return json.load(f)
 
-def _bundle_hash(data: list[Dict]) -> str:
+def _bundle_hash(data: object) -> str:
     canonical = json.dumps(data, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(canonical.encode()).hexdigest()
+
+def _latest_anchored_hash() -> str | None:
+    if not ANCHORS_PATH.exists():
+        return None
+    txt = ANCHORS_PATH.read_text(encoding="utf-8")
+    # Matches: - `digest` → [tx](...)
+    digests = re.findall(r"-\\s+`([0-9a-f]{64})`\\s+→", txt, flags=re.IGNORECASE)
+    return digests[-1] if digests else None
 
 #
 # NOTE: Anchoring is handled explicitly via `src/anchor_hash.py` and
@@ -43,14 +52,14 @@ def guardian_session(text: str) -> dict:
     """
     directives = _load_directives()
     bundle_h   = _bundle_hash(directives)
-    KNOWN_HASH = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
+    known = _latest_anchored_hash()
 
-    if bundle_h != KNOWN_HASH:
+    if known and bundle_h != known:
         verdict = {
             "passed": False,
             "score": 0,
             "violations": ["directive_hash_mismatch"],
-            "notes": [f"local directives hash {bundle_h} does not match canonical {KNOWN_HASH}"],
+            "notes": [f"local directives hash {bundle_h} does not match last anchored {known} (docs/ANCHORS.md)"],
         }
         return verdict
 

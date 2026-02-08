@@ -9,10 +9,8 @@ from __future__ import annotations
 import hashlib, json, threading, time, yaml
 from pathlib import Path
 from typing import Dict, Tuple
-from .guardian_extended import guardian as _guardian_fast
-from .detectors.mini_semantic import semantic_block   # semantic detector
 from concurrent.futures import ThreadPoolExecutor
-from .directive_validation import validate_output as _validate_directives
+from .directive_validation import canonical_ruleset_sha256, validate_output as _validate_directives
 
 # ── config --------------------------------------------------------------
 CFG = yaml.safe_load(Path("config/guardian_scoring.yaml").read_text("utf-8"))
@@ -22,16 +20,12 @@ CACHE_TTL   = int(CFG.get("cache_ttl_s", 86400))
 THRESHOLD   = float(CFG.get("detectors", {}).get("mini_semantic", {}).get("threshold", 0.80))
 SEM_ENABLED = bool(CFG.get("detectors", {}).get("mini_semantic", {}).get("enabled", True))
 
-VAL_CFG = CFG.get("validation", {}) or {}
-ENFORCE_CONFIDENCE = bool(VAL_CFG.get("enforce_confidence_tag", False))
-ENFORCE_UNCERTAIN = bool(VAL_CFG.get("enforce_uncertain_tag", False))
-ENFORCE_MICROFORMATS = bool(VAL_CFG.get("enforce_microformats", True))
-
 LOG_CFG = CFG.get("logging", {}) or {}
 LOG_STORE_TEXT = bool(LOG_CFG.get("store_text", True))
 LOG_PREVIEW_CHARS = int(LOG_CFG.get("text_preview_chars", 0) or 0)
 
-DIRECTIVES_HASH  = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
+# Derived from the canonical JSON of src/directives_schema.json.
+DIRECTIVES_HASH = canonical_ruleset_sha256()
 _cache: Dict[str, Tuple[float, dict]] = {}
 LOG_DIR   = Path("logs")
 LOG_FILE  = LOG_DIR / "output_log.jsonl"
@@ -44,7 +38,8 @@ def _sha(txt: str) -> str:
     return hashlib.sha256(txt.encode()).hexdigest()
 
 def _key(txt: str) -> str:
-    return f"{_sha(txt)}::{DIRECTIVES_HASH}"
+    # Include semantic settings so cached results don't mix across modes/configs.
+    return f"{_sha(txt)}::{DIRECTIVES_HASH}::{MODE}::{int(SEM_ENABLED)}::{THRESHOLD:.3f}"
 
 def _get(k: str):
     hit = _cache.get(k)
@@ -92,9 +87,10 @@ def _warm_semantic():
     if _PRELOAD_DONE:
         return
     try:
-        # One dummy call to load model weights and allocations
+        # One dummy call to load model weights and allocations (semantic model import is lazy).
         if SEM_ENABLED:
-            semantic_block("warmup", THRESHOLD)
+            from .detectors.mini_semantic import semantic_match
+            semantic_match("warmup", ["warmup"], 0.999)
         _PRELOAD_DONE = True
     except Exception:
         # Do not block startup if warmup fails
@@ -108,36 +104,40 @@ def guardian_chat(text: str) -> dict:
         _log_latency(MODE, 0.0, None, cached=True)
         return cached
 
+    # Fast path: schema-driven deterministic checks excluding semantic similarity.
     t0 = time.perf_counter()
-    res = _guardian_fast(text)
+    findings = _validate_directives(text, include_semantic=False, semantic_matcher=None)
     dt_fast = (time.perf_counter() - t0) * 1_000
+
+    res: dict = {"passed": True, "violations": [], "notes": [], "score": 100}
+    for f in findings:
+        if f.level == "violation":
+            res["passed"] = False
+            res.setdefault("score", 0)
+            res["violations"].append(f"directive_{f.directive_id}")
+            res["notes"].append(f"{f.title}: {f.message}")
+        else:
+            res["notes"].append(f"{f.title}: {f.message}")
 
     # strict mode blocks on semantic; sync_light returns quickly and may update later.
     dt_sem = None
     if MODE == "strict" and SEM_ENABLED and res.get("passed", True):
+        from .detectors.mini_semantic import semantic_match
         t1 = time.perf_counter()
-        if semantic_block(text, THRESHOLD):
-            res = {"passed": False, "notes": ["semantic_block"], "violations": ["semantic_block"], "score": 0}
+        sem_findings = _validate_directives(text, include_semantic=True, semantic_matcher=semantic_match)
         dt_sem = (time.perf_counter() - t1) * 1_000
+        for f in sem_findings:
+            if f.level == "violation":
+                res["passed"] = False
+                res.setdefault("score", 0)
+                res["violations"].append(f"directive_{f.directive_id}")
+                res["notes"].append(f"{f.title}: {f.message}")
+            else:
+                res["notes"].append(f"{f.title}: {f.message}")
     elif MODE == "sync_light" and SEM_ENABLED and res.get("passed", True):
-        threading.Thread(target=_bg_heavy_check, args=(text, k, THRESHOLD), daemon=True).start()
+        threading.Thread(target=_bg_heavy_check, args=(text, k), daemon=True).start()
         if dt_fast > BUDGET_MS:
             res.setdefault("notes", []).append(f"background_pending:{int(dt_fast)}ms")
-
-    # Directive-criteria validations (structure-triggered to reduce false positives)
-    findings = _validate_directives(
-        text,
-        enforce_confidence_tag=ENFORCE_CONFIDENCE,
-        enforce_uncertain_tag=ENFORCE_UNCERTAIN,
-        enforce_microformats=ENFORCE_MICROFORMATS,
-    )
-    for f in findings:
-        if f.level == "violation":
-            res.setdefault("violations", []).append(f"directive_{f.key}")
-            res["passed"] = False
-            res.setdefault("score", 0)
-        else:
-            res.setdefault("notes", []).append(f"{f.key}:{f.message}")
 
     _set(k, res)
     _log_output(text, res)
@@ -145,7 +145,15 @@ def guardian_chat(text: str) -> dict:
     return res
 
 # ── background hook -----------------------------------------------------
-def _bg_heavy_check(text: str, key: str, thresh: float):
-    if semantic_block(text, thresh):
-        _set(key, {"passed": False, "notes": ["semantic_block"]})
-        _log_output(text, {"passed": False, "notes": ["semantic_block"]})
+def _bg_heavy_check(text: str, key: str):
+    from .detectors.mini_semantic import semantic_match
+    sem_findings = _validate_directives(text, include_semantic=True, semantic_matcher=semantic_match)
+    blocked = any(f.level == "violation" for f in sem_findings)
+    if blocked:
+        res: dict = {"passed": False, "score": 0, "violations": [], "notes": []}
+        for f in sem_findings:
+            if f.level == "violation":
+                res["violations"].append(f"directive_{f.directive_id}")
+            res["notes"].append(f"{f.title}: {f.message}")
+        _set(key, res)
+        _log_output(text, res)

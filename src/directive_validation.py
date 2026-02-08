@@ -1,162 +1,217 @@
 """
 directive_validation.py
 
-Lightweight, deterministic validation for directives that already have explicit
-machine-checkable criteria in `src/directives_schema.json`.
+Schema-driven, deterministic validation for the canonical ruleset in:
+  - src/directives_schema.json
 
-Design goals (v0.3 Research Beta):
-- Do NOT change the directive bundle (avoids re-anchoring churn).
-- Be explicit about what is enforced vs. what is only documented intent.
-- Avoid false positives by only enforcing micro-directive formats when the
-  output opts into that structure (e.g., includes "Premise:" / "Inference:").
+Goal:
+  - Every directive in the enterprise ruleset has machine-checkable criteria.
+  - Enforcement tier is explicit: BLOCK vs WARN.
+  - Semantic checks are supported via an injected callback so unit tests stay lightweight.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 
-DIRECTIVES_PATH = Path("src/directives_schema.json")
+ROOT = Path(__file__).resolve().parents[1]
+DIRECTIVES_PATH = ROOT / "src" / "directives_schema.json"
 
-# Canonical v3.2 directive bundle hash (sorted keys, Unicode preserved)
-KNOWN_DIRECTIVES_HASH_V32 = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
+# Signature for semantic matching:
+# - Return (blocked, reason_string)
+SemanticMatcher = Callable[[str, List[str], float], Tuple[bool, str]]
+
+_RULESET_CACHE: Dict[str, Any] | None = None
+_RULESET_MTIME: float | None = None
 
 
 @dataclass(frozen=True)
 class Finding:
-    key: str  # e.g. "6a", "71", "24b"
+    directive_id: int
+    title: str
     level: str  # "violation" | "advisory"
     message: str
 
 
-def _directive_key(d: dict) -> str:
-    # Some directives are broken into micro-steps with the same id and a `sub` field.
-    sub = d.get("sub")
-    return f"{d.get('id')}{sub}" if sub else str(d.get("id"))
+def load_ruleset(path: Path = DIRECTIVES_PATH) -> Dict[str, Any]:
+    global _RULESET_CACHE, _RULESET_MTIME
+    try:
+        mtime = path.stat().st_mtime
+    except FileNotFoundError:
+        mtime = None
+    if _RULESET_CACHE is not None and _RULESET_MTIME == mtime:
+        return _RULESET_CACHE
+
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(raw, dict):
+        _RULESET_CACHE, _RULESET_MTIME = raw, mtime
+        return raw
+    # Legacy support: older bundles were a plain list.
+    out = {"meta": {"name": "Legacy Ruleset"}, "directives": raw}
+    _RULESET_CACHE, _RULESET_MTIME = out, mtime
+    return out
 
 
-def load_directives(path: Path = DIRECTIVES_PATH) -> list[dict]:
-    return json.loads(path.read_text(encoding="utf-8"))
+def get_directives(ruleset: Dict[str, Any]) -> List[Dict[str, Any]]:
+    directives = ruleset.get("directives")
+    if not isinstance(directives, list):
+        raise TypeError("ruleset.directives must be a list")
+    out: List[Dict[str, Any]] = []
+    for i, item in enumerate(directives):
+        if not isinstance(item, dict):
+            raise TypeError(f"Directive at index {i} is not an object/dict")
+        out.append(item)
+    return out
 
 
-def _lines(text: str) -> list[str]:
-    return [ln.rstrip() for ln in text.splitlines()]
+def canonical_ruleset_sha256(path: Path = DIRECTIVES_PATH) -> str:
+    """
+    Must match src/anchor_hash.py:
+      json.dumps(obj, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    """
+    obj = json.loads(path.read_text(encoding="utf-8"))
+    canonical = json.dumps(obj, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
 
 
-def _first_nonempty(lines: Iterable[str]) -> Optional[str]:
-    for ln in lines:
-        if ln.strip():
-            return ln.strip()
-    return None
+def _compile_flags(flag_s: str) -> int:
+    flags = 0
+    for ch in (flag_s or ""):
+        if ch.lower() == "i":
+            flags |= re.IGNORECASE
+        elif ch.lower() == "m":
+            flags |= re.MULTILINE
+        elif ch.lower() == "s":
+            flags |= re.DOTALL
+    return flags
 
 
 def _word_count(s: str) -> int:
-    # Simple tokenization suitable for objective limits (<= N words)
     return len([w for w in re.split(r"\s+", s.strip()) if w])
+
+
+def _luhn_ok(digits: str) -> bool:
+    total = 0
+    parity = len(digits) % 2
+    for i, ch in enumerate(digits):
+        n = ord(ch) - 48
+        if i % 2 == parity:
+            n *= 2
+            if n > 9:
+                n -= 9
+        total += n
+    return total % 10 == 0
+
+
+_CARD_CANDIDATE_RE = re.compile(r"(?:\\d[ -]?){13,19}")
+
+
+def _find_luhn_cards(text: str) -> List[str]:
+    hits: List[str] = []
+    for m in _CARD_CANDIDATE_RE.finditer(text):
+        candidate = m.group(0)
+        digits = re.sub(r"[^0-9]", "", candidate)
+        if 13 <= len(digits) <= 19 and _luhn_ok(digits):
+            hits.append(digits)
+    return hits
 
 
 def validate_output(
     text: str,
     *,
-    enforce_confidence_tag: bool = False,
-    enforce_uncertain_tag: bool = False,
-    enforce_microformats: bool = True,
+    include_semantic: bool,
+    semantic_matcher: Optional[SemanticMatcher] = None,
 ) -> List[Finding]:
     """
-    Validate an output string against the subset of directives with explicit criteria.
+    Validate text against the schema-driven ruleset.
 
-    Returns a list of Findings. Callers decide whether advisories should block.
+    - include_semantic controls whether semantic_forbid checks are evaluated.
+    - semantic_matcher is required when include_semantic is True.
     """
+    ruleset = load_ruleset()
+    directives = get_directives(ruleset)
+
     findings: List[Finding] = []
-    ls = _lines(text)
-    joined = "\n".join(ls)
 
-    # ------------------------------------------------------------------
-    # Monitoring: Confidence tag format (Directive 71)
-    # ------------------------------------------------------------------
-    conf_re = re.compile(r"Confidence:\s*(High|Medium|Low)\b", re.IGNORECASE)
-    has_conf = "confidence:" in joined.lower()
-    if has_conf:
-        if not conf_re.search(joined):
-            findings.append(Finding("71", "violation", "Confidence tag present but not in format 'Confidence: High|Medium|Low'."))
-    else:
-        if enforce_confidence_tag:
-            findings.append(Finding("3/71", "violation", "Missing required confidence tag (e.g., 'Confidence: High')."))
-        else:
-            findings.append(Finding("3/71", "advisory", "No confidence tag found. (Optional unless enforce_confidence_tag=true)"))
+    for d in directives:
+        did = d.get("id")
+        if not isinstance(did, int):
+            continue
 
-    # ------------------------------------------------------------------
-    # Uncertainty: [uncertain] tag (Directive 10)
-    # ------------------------------------------------------------------
-    has_uncertain_tag = "[uncertain]" in joined.lower()
-    if enforce_uncertain_tag and not has_uncertain_tag:
-        findings.append(Finding("10", "violation", "Missing required [uncertain] tag."))
+        title = str(d.get("title") or d.get("text") or "").strip() or f"Directive {did}"
+        tier = str(d.get("validation_tier") or "BLOCK").strip().upper()
+        vc = d.get("validation_criteria") or {}
+        checks = vc.get("checks") if isinstance(vc, dict) else None
+        if not isinstance(checks, list):
+            # Enterprise ruleset requires checks; treat missing checks as an advisory.
+            findings.append(Finding(did, title, "advisory", "Directive has no machine-checkable checks."))
+            continue
 
-    # ------------------------------------------------------------------
-    # Micro-directive formats (IDs 6, 14, 24)
-    # Enforced only when output opts into the structure (marker-based trigger).
-    # ------------------------------------------------------------------
-    if enforce_microformats:
-        def _starts_with_label(line: str, label: str) -> bool:
-            # Case-insensitive by design to reduce surprising behavior.
-            return line.lstrip().lower().startswith(label)
+        level = "violation" if tier == "BLOCK" else "advisory"
 
-        # ID 6 (Logical-Extension): triggered by Premise:/Inference:
-        if any(_starts_with_label(ln, "premise:") or _starts_with_label(ln, "inference:") for ln in ls):
-            premise_lines = [ln for ln in ls if _starts_with_label(ln, "premise:")]
-            infer_lines = [ln for ln in ls if _starts_with_label(ln, "inference:")]
-            if not premise_lines:
-                findings.append(Finding("6a", "violation", "Missing line starting with 'Premise:'."))
-            if not infer_lines:
-                findings.append(Finding("6b", "violation", "Missing line starting with 'Inference:'."))
-            if infer_lines:
-                # Apply the <=20 words + ends-with-period to the first Inference line's content.
-                _, _, content = infer_lines[0].partition(":")
-                content = content.strip()
-                if _word_count(content) > 20:
-                    findings.append(Finding("6c", "violation", "Inference content exceeds 20 words."))
-                if content and not content.endswith("."):
-                    findings.append(Finding("6c", "violation", "Inference content must end with a period."))
+        for chk in checks:
+            if not isinstance(chk, dict):
+                continue
+            kind = str(chk.get("kind") or "").strip()
 
-        # ID 14 (Associative Reasoning): triggered by Related:
-        if any(_starts_with_label(ln, "related:") for ln in ls):
-            idxs = [i for i, ln in enumerate(ls) if _starts_with_label(ln, "related:")]
-            i0 = idxs[0]
-            # Next two non-empty lines after Related are treated as steps b and c.
-            tail = [ln.strip() for ln in ls[i0 + 1 :] if ln.strip()]
-            if not tail:
-                findings.append(Finding("14b", "violation", "Missing explanation line after 'Related:'."))
+            if kind == "regex_forbid":
+                pats = chk.get("patterns")
+                if not isinstance(pats, list):
+                    continue
+                for p in pats:
+                    if not isinstance(p, dict):
+                        continue
+                    rx = str(p.get("regex") or "")
+                    if not rx:
+                        continue
+                    flags = _compile_flags(str(p.get("flags") or ""))
+                    if re.search(rx, text, flags=flags):
+                        pname = str(p.get("name") or "pattern")
+                        findings.append(Finding(did, title, level, f"Matched forbidden pattern: {pname}."))
+
+            elif kind == "regex_require":
+                rx = str(chk.get("pattern") or "")
+                if not rx:
+                    continue
+                flags = _compile_flags(str(chk.get("flags") or ""))
+                if not re.search(rx, text, flags=flags):
+                    findings.append(Finding(did, title, level, "Missing required pattern."))
+
+            elif kind == "luhn_card_forbid":
+                cards = _find_luhn_cards(text)
+                if cards:
+                    findings.append(Finding(did, title, level, "Detected a likely payment card number (Luhn-positive)."))
+
+            elif kind == "semantic_forbid":
+                if not include_semantic:
+                    continue
+                if semantic_matcher is None:
+                    raise ValueError("include_semantic=True requires semantic_matcher")
+                phrases = chk.get("phrases")
+                if not isinstance(phrases, list) or not phrases:
+                    continue
+                phrases_s = [str(x) for x in phrases if str(x).strip()]
+                threshold = float(chk.get("threshold") or 0.78)
+                blocked, reason = semantic_matcher(text, phrases_s, threshold)
+                if blocked:
+                    msg = "Semantic similarity matched a prohibited intent."
+                    if reason:
+                        msg += f" ({reason})"
+                    findings.append(Finding(did, title, level, msg))
+
+            elif kind == "max_words":
+                n = int(chk.get("n") or 0)
+                if n > 0 and _word_count(text) > n:
+                    findings.append(Finding(did, title, level, f"Output exceeds {n} words."))
+
             else:
-                if _word_count(tail[0]) > 25:
-                    findings.append(Finding("14b", "violation", "Explanation exceeds 25 words."))
-            if len(tail) < 2:
-                findings.append(Finding("14c", "violation", "Missing practical implication line after explanation."))
-            else:
-                if _word_count(tail[1]) > 30:
-                    findings.append(Finding("14c", "violation", "Practical implication exceeds 30 words."))
-
-        # ID 24 (First-Principles): triggered by explicit marker in output
-        # (avoid false positives on arbitrary bullet lists)
-        fp_idxs = [i for i, ln in enumerate(ls) if ln.lstrip().lower().startswith("first-principles")]
-        if fp_idxs:
-            # Treat the First-Principles content as the section after the marker line.
-            i0 = fp_idxs[0]
-            section = ls[i0 + 1 :]
-            nonempty = [ln.strip() for ln in section if ln.strip()]
-            rest = nonempty[0] if nonempty else ""
-            if rest and _word_count(rest) > 15:
-                findings.append(Finding("24a", "violation", "Restatement exceeds 15 words."))
-
-            bullets = [ln.strip() for ln in section if re.match(r"^[-*]\s+", ln.strip())]
-            if len(bullets) != 2:
-                findings.append(Finding("24b", "violation", "Expected exactly two bullet points."))
-
-            # For v0.3 we enforce the objective <=100 word limit only.
-            if _word_count(" ".join(nonempty)) > 100:
-                findings.append(Finding("24c", "violation", "First-principles output exceeds 100 words."))
+                # Unknown check kinds should be visible to reviewers.
+                findings.append(Finding(did, title, "advisory", f"Unknown check kind: {kind!r}."))
 
     return findings

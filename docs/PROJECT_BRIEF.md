@@ -1,4 +1,4 @@
-# CANDELA – Project Brief (v0.1.1 - May 2025)
+# CANDELA – Project Brief (Updated for v0.3 - Feb 2026)
 
 **CANDELA: Compliant Auditable Natural-language Directive Enforcement & Ledger Anchoring**
 
@@ -18,11 +18,11 @@ CANDELA introduces the **"Directive Guardian,"** a middleware software component
 
 The core principles are:
 
-1.  **Defined Rule-Set:** The Directive Scaffold (currently 76 directives, including examples of "micro-directives" for complex concepts) is stored in a machine-readable JSON format (`src/directives_schema.json`).
+1.  **Defined Rule-Set:** The canonical ruleset is stored in a machine-readable JSON format (`src/directives_schema.json`).
 2.  **Integrity via Blockchain Anchoring:** Before the Guardian uses these directives, it calculates a unique cryptographic fingerprint (SHA-256 hash) of the entire directive set. This hash is then recorded ("anchored") on a public blockchain testnet (e.g., Polygon Mumbai or Ethereum Sepolia). This creates an immutable, publicly verifiable record of the exact rule-set that *should* be in force.
-3.  **Runtime Verification:** At the start of an interaction, the Guardian verifies the integrity of its local directive set by comparing its hash against the canonical hash retrieved from the blockchain.
+3.  **Runtime Verification:** The Guardian computes the canonical SHA-256 of the local ruleset and records it in every audit log entry. Reviewers can compare that hash to the on-chain anchor listed in `docs/ANCHORS.md`.
 4.  **Guided Model Output:** The Guardian strategically incorporates the verified directives into prompts sent to the model.
-5.  **Automated Validation:** The Guardian checks the model's responses against the requirements of the active directives (especially "auto" tier micro-directives in the current PoC).
+5.  **Automated Validation:** The Guardian checks text outputs against the machine-checkable criteria in the ruleset (BLOCK and WARN tiers).
 6.  **Accountability Loop:** The system enables an auditable trail from the enforced rules to the model’s behavior, with options to also anchor hashes of interactions.
 
 ---
@@ -41,7 +41,7 @@ The core principles are:
 ## Current Status (v0.3 — Feb 2026)
 
 * **Guardian:** Regex + MiniLM (`all-MiniLM-L6-v2`) semantic checks with caching (`src/guardian_runtime.py`). Modes: `strict` (default, blocks until semantic passes), `sync_light` (asynchronous semantic), `regex_only` (no semantic). Warm preload prevents first-call stalls; latency is logged.
-* **Directive set:** `src/directives_schema.json` (v3.2, 76 directives) — canonical SHA-256 `7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d`, anchored on Sepolia (`docs/ANCHORS.md`).
+* **Ruleset:** `src/directives_schema.json` (Enterprise E1.0, 12 directives; no N/A criteria) — canonical SHA-256 `bddd2587745d1d86a4d14cf006025386a218e4550642ca236ca6b682125e3f6a` (anchor recorded in `docs/ANCHORS.md`).
 * **Output provenance:** Every checked output is logged off-chain, batched into a Merkle root, and anchored on-chain via `src/anchor_outputs.py` (entries recorded in `docs/ANCHORS.md`). Individual outputs can be proven later via Merkle proof.
 * **Docs/DOI:** OSF DOI 10.17605/OSF.IO/3S7BT; Tech Spec/README/Roadmap aligned to v0.3; reviewer bundle available.
 
@@ -54,7 +54,7 @@ The core principles are:
 ## Key Components (v0.3)
 
 1. **Guardian runtime:** `src/guardian_runtime.py` (regex + semantic, cached, warm preload, modes).  
-2. **Directive schema:** `src/directives_schema.json` (v3.2) with hash anchored on-chain.  
+2. **Ruleset schema:** `src/directives_schema.json` (Enterprise E1.0) with hash anchored on-chain.  
 3. **Output provenance:** `logs/output_log.jsonl` + `src/anchor_outputs.py` → Merkle root anchored on Sepolia.  
 4. **Anchoring scripts:** `src/anchor_hash.py` (directives) and `src/anchor_outputs.py` (outputs).
 
@@ -83,11 +83,11 @@ The core principles are:
     ```bash
     pip install -r requirements.txt
     ```
-3.  **Run the Proof-of-Concept:**
+3.  **Run the PoC front door:**
     ```bash
-    python3 src/guardian_poc_v0.1.py
+    python3 run_guardian.py --help
     ```
-    This will demonstrate the directive loading, hashing, and mock interaction flow.
+    This supports local files (txt/md/pdf) and produces a reviewer-friendly JSON report.
 
 We welcome contributions! See our `TECH_SPEC.md` for developer to-dos, `ROADMAP.md` for future plans, and the [Issues Tab](https://github.com/jebus197/CANDELA/issues) on GitHub. ---
 

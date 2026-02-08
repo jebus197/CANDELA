@@ -103,7 +103,7 @@ For the exact coverage list (what is enforced vs. documented intent), see:
 ### 10. What is the current status and roadmap for CANDELA?
 
 As of Feb 2026, CANDELA is at **v0.3 (Research Beta)**.
-* The directive set (v3.2) is defined in `src/directives_schema.json` and its canonical SHA-256 is anchored on Sepolia (see `ANCHORS.md`).
+* The ruleset (Enterprise E1.0) is defined in `src/directives_schema.json` and its canonical SHA-256 is anchored on Sepolia (see `ANCHORS.md`).
 * The runtime Guardian supports regex + semantic checks with strict mode as the default (`guardian_runtime.py`).
 * Outputs are logged off-chain and batched into Merkle roots that can be anchored on-chain for auditability (`anchor_outputs.py`).
 

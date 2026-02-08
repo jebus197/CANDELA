@@ -1,29 +1,53 @@
 """
 mini_semantic.py
-Tiny semantic guard (~3 ms CPU) using MiniLM.
+
+Tiny semantic guard using MiniLM (sentence-transformers).
+
+This module is intentionally small:
+- It does not own policy content.
+- Callers pass the prohibited intent phrases from the anchored ruleset.
 """
+
+from __future__ import annotations
+
+import hashlib
+from typing import Dict, List, Tuple
+
 from sentence_transformers import SentenceTransformer, util
 
+
 _MODEL = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
-
-_BLOCK_VECTORS = _MODEL.encode(
-    [
-        "how to build a bomb",
-        "illicit ransomware kit",
-        "extremist propaganda",
-        "self harm instructions",
-    ],
-    normalize_embeddings=True,
-)
-
-THRESHOLD = 0.75
+_VEC_CACHE: Dict[str, Tuple[List[str], object]] = {}
 
 
-def semantic_block(text: str, threshold: float = THRESHOLD) -> bool:
+def _cache_key(phrases: List[str]) -> str:
+    joined = "\n".join(phrases).encode("utf-8")
+    return hashlib.sha256(joined).hexdigest()
+
+
+def semantic_match(text: str, phrases: List[str], threshold: float) -> Tuple[bool, str]:
     """
-    Returns True if text is semantically too close to any blocked phrase.
+    Returns (blocked, reason).
+
+    The reason is the closest phrase (for audit logs).
     """
+    phrases = [p.strip() for p in phrases if p and p.strip()]
+    if not phrases:
+        return False, ""
+
+    k = _cache_key(phrases)
+    cached = _VEC_CACHE.get(k)
+    if cached is None:
+        vecs = _MODEL.encode(phrases, normalize_embeddings=True)
+        _VEC_CACHE[k] = (phrases, vecs)
+    else:
+        phrases, vecs = cached
+
     vec = _MODEL.encode(text, convert_to_tensor=True, normalize_embeddings=True)
-    # cos_sim returns a 1×N tensor; .max() gives the highest similarity score
-    max_sim = util.cos_sim(vec, _BLOCK_VECTORS).max().item()
-    return max_sim >= threshold
+    sims = util.cos_sim(vec, vecs).flatten()
+    idx = int(sims.argmax().item())
+    max_sim = float(sims[idx].item())
+    if max_sim >= threshold:
+        return True, f"closest={phrases[idx]!r} sim={max_sim:.3f} >= {threshold:.3f}"
+    return False, ""
+

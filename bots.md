@@ -18,10 +18,13 @@ This is the **canonical** coordination file. If there is a conflict between othe
 
 ---
 
-## Current status (sandbox)
-- Programmatic fixes completed in sandbox (Guardian wiring, hash alignment, MiniLM semantic detector de-duplication).
-- Tests and stress checks run; pass.
-- Anchoring executed successfully. Canonical hash 7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d anchored on Sepolia tx 0x2653a983ce75c31de39ab4b53c01fada024aac170c2fc99b7845f8df4702db70.
+## Current status
+- Legacy personal ruleset (v3.2) has been retired from the repo to avoid reviewer confusion.
+  - Archived copy: `/Users/georgejackson/Developer_Projects/Candela_Legacy_Directives_Schema_v3.2_2026-02-08.json`
+- Canonical ruleset in the repo is now an enterprise-facing example pack:
+  - File: `src/directives_schema.json` (Enterprise E1.0)
+  - All directives are machine-checkable (BLOCK or WARN); no `N/A` criteria.
+- Tests run locally: all pass except the anchoring-integrity test until E1.0 is re-anchored and logged in `docs/ANCHORS.md`.
 
 ---
 
@@ -56,12 +59,12 @@ Goals:
 ---
 
 ## Anchoring (must be completed)
-- Add credentials to `.env` in the sandbox:
+- Add credentials to `.env` in the repo root:
   - SEPOLIA_RPC_URL
   - PRIVATE_KEY (or SEPOLIA_PRIVATE_KEY)
 - Run: `python3 src/anchor_hash.py`
 - Record the tx hash in docs/ANCHORS.md
-- Update docs/ROADMAP.md and docs/PROJECT_BRIEF.md with the new hash/tx
+- Update any docs that reference the ruleset hash to point reviewers to `docs/ANCHORS.md`
 
 ---
 

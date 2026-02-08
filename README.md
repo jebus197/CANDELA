@@ -32,7 +32,7 @@ Visuals
 - Optional demo wiring (model generates output, CANDELA checks it): `docs/DEMO_MODEL_WIRING.md`
 
 Validation coverage
-- What is enforced vs. documented intent: `docs/VALIDATION_COVERAGE.md`
+- What is enforced (BLOCK vs WARN) in the current enterprise ruleset (E1.0): `docs/VALIDATION_COVERAGE.md`
 - Exact directive counts/IDs (reviewer-friendly): `python3 src/report_directives.py`
 
 

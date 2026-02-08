@@ -2,45 +2,40 @@
 test_directive_schema.py
 ------------------------
 
-Minimal smoke test for CANDELA Proof-of-Concept.
+Ruleset integrity test (reviewer-facing).
 
-Purpose:
-    - Ensures the core directives schema (src/directives_schema.json) is present, valid, non-empty, and unmodified.
-    - Computes and compares the schema’s SHA-256 hash against the documented canonical hash for v3.2 PoC.
-    - Catches accidental edits, corruption, or schema file removal.
+What this guarantees:
+- src/directives_schema.json exists and is valid JSON
+- the canonical SHA-256 of that JSON is recorded in docs/ANCHORS.md
 
-Rationale:
-    - In early-stage research/PoC code, this kind of test provides quick confidence that the foundational artifact (the directive set)
-      is exactly as intended for reproducible experimentation, even before full test infrastructure or CI is in place.
-
-Usage:
-    - Run with pytest from the repo root: `pytest tests/`
-    - This test is illustrative but functional and is intended as a template for future, more comprehensive tests.
-
+This avoids hard-coding a specific hash in tests while still ensuring the
+repository documents the anchored artefact reviewers are expected to verify.
 """
 
-import json
 import hashlib
+import json
+import re
 from pathlib import Path
 
-# Path to the directive schema (relative to tests/ directory)
-DIRECTIVES_PATH = Path(__file__).parent.parent / "src" / "directives_schema.json"
-# Known SHA-256 hash for v3.2 as documented in README and Project Brief
-KNOWN_HASH_V32 = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
-def test_directives_schema_load_and_hash():
-    """Test that the directives schema loads and matches the documented hash."""
-    # Ensure file exists
+
+ROOT = Path(__file__).parent.parent
+DIRECTIVES_PATH = ROOT / "src" / "directives_schema.json"
+ANCHORS_PATH = ROOT / "docs" / "ANCHORS.md"
+
+
+def test_directives_schema_load_and_is_anchored():
     assert DIRECTIVES_PATH.exists(), f"Directive schema not found at {DIRECTIVES_PATH}"
+    assert ANCHORS_PATH.exists(), f"Anchor log not found at {ANCHORS_PATH}"
 
-    # Load and check type
-    with DIRECTIVES_PATH.open("r", encoding="utf-8") as f:
-        directives = json.load(f)
-    assert isinstance(directives, list), "Directives schema is not a list"
-    assert len(directives) > 0, "Directives schema is empty"
+    obj = json.loads(DIRECTIVES_PATH.read_text(encoding="utf-8"))
+    # Shape can evolve; we only require it to be non-empty JSON.
+    assert obj is not None
 
-    # Compute hash (keys sorted, Unicode preserved)
-    directives_string = json.dumps(directives, sort_keys=True, ensure_ascii=False)
-    bundle_hash = hashlib.sha256(directives_string.encode("utf-8")).hexdigest()
-    assert bundle_hash == KNOWN_HASH_V32, (
-        f"Directive bundle hash mismatch: got {bundle_hash}, expected {KNOWN_HASH_V32}"
+    canonical = json.dumps(obj, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    digest = hashlib.sha256(canonical).hexdigest()
+
+    anchors = ANCHORS_PATH.read_text(encoding="utf-8")
+    assert re.search(rf"`{digest}`", anchors), (
+        "Current directives_schema.json hash is not recorded in docs/ANCHORS.md. "
+        "If you intentionally changed the ruleset, re-anchor and log the new hash."
     )

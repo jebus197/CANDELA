@@ -13,13 +13,58 @@ import importlib
 from typing import Tuple, Callable, Optional
 
 # ── 1.  Fast regex blockers ────────────────────────────────────────────────
-SAFETY_REGEX_PATTERNS: dict[str, re.Pattern] = {
-    "hex_key": re.compile(r"\b0x[a-fA-F0-9]{64}\b"),
-    "dob":     re.compile(r"\b[A-Z][a-z]+ [A-Z][a-z]+,?\s*\d{2}/\d{2}/\d{4}\b"),
-    "profanity": re.compile(
-        r"\b(?:damn|shit|fuck|bitch|bastard|asshole|cunt)\b", re.IGNORECASE
-    ),
-}
+# Source of truth: src/directives_schema.json (anchored). We precompile the
+# BLOCK-tier regex_forbid checks for a fast "first pass".
+def _compile_ruleset_patterns() -> dict[str, re.Pattern]:
+    try:
+        from .directive_validation import load_ruleset, get_directives
+
+        ruleset = load_ruleset()
+        directives = get_directives(ruleset)
+        out: dict[str, re.Pattern] = {}
+
+        def _flags(flag_s: str) -> int:
+            flags = 0
+            for ch in (flag_s or ""):
+                if ch.lower() == "i":
+                    flags |= re.IGNORECASE
+                elif ch.lower() == "m":
+                    flags |= re.MULTILINE
+                elif ch.lower() == "s":
+                    flags |= re.DOTALL
+            return flags
+
+        for d in directives:
+            tier = str(d.get("validation_tier") or "").upper()
+            if tier != "BLOCK":
+                continue
+            vc = d.get("validation_criteria") or {}
+            checks = vc.get("checks") if isinstance(vc, dict) else None
+            if not isinstance(checks, list):
+                continue
+            for chk in checks:
+                if not isinstance(chk, dict) or chk.get("kind") != "regex_forbid":
+                    continue
+                pats = chk.get("patterns")
+                if not isinstance(pats, list):
+                    continue
+                for p in pats:
+                    if not isinstance(p, dict):
+                        continue
+                    name = str(p.get("name") or "").strip()
+                    rx = str(p.get("regex") or "")
+                    if not name or not rx:
+                        continue
+                    out[name] = re.compile(rx, _flags(str(p.get("flags") or "")))
+        return out
+    except Exception:
+        # Last-resort fallback: tiny default set, keeps CLI harness usable.
+        return {
+            "eth_private_key_hex": re.compile(r"\b0x[a-fA-F0-9]{64}\b"),
+        }
+
+
+SAFETY_REGEX_PATTERNS: dict[str, re.Pattern] = _compile_ruleset_patterns()
 
 def regex_guard(text: str) -> Tuple[bool, str]:
     """Return (passes, rule_name_or_empty)."""

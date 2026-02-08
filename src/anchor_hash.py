@@ -86,6 +86,14 @@ entry = f"- `{digest}` → [{tx_hash.hex()}](https://sepolia.etherscan.io/tx/{tx
 ANCHOR_LOG.touch(exist_ok=True)
 existing = ANCHOR_LOG.read_text(encoding="utf-8")
 if entry not in existing:
-    with ANCHOR_LOG.open("a", encoding="utf-8") as f:
-        f.write(entry)
+    marker = "## Ruleset anchors"
+    if marker in existing:
+        head, tail = existing.split(marker, 1)
+        # Insert directly under the section header.
+        new_tail = marker + "\n\n" + entry + tail.lstrip("\n")
+        ANCHOR_LOG.write_text(head + new_tail, encoding="utf-8")
+    else:
+        # Fallback: append.
+        with ANCHOR_LOG.open("a", encoding="utf-8") as f:
+            f.write(entry)
 print("📄  Logged to docs/ANCHORS.md")
