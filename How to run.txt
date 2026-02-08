@@ -1,0 +1,56 @@
+CANDELA v0.3 - How to Run (Quick)
+
+This project includes a single end-to-end script called run_guardian.py.
+It checks a document using CANDELA's "Guardian" and prints a clear PASS/FAIL result.
+
+1) Install dependencies
+
+From the CANDELA folder:
+
+  python3 -m pip install -r requirements.txt
+
+Note: This installs torch and sentence-transformers (larger downloads).
+
+Optional (only needed for PDF input):
+
+  python3 -m pip install pdfplumber
+
+If you cannot install pdfplumber, you can use:
+
+  python3 -m pip install pypdf
+
+2) Run the Guardian on a file
+
+Text / Markdown:
+
+  python3 run_guardian.py --input path/to/file.txt --mode strict
+  python3 run_guardian.py --input path/to/file.md  --mode regex_only
+
+PDF:
+
+  python3 run_guardian.py --input path/to/file.pdf --mode strict
+
+3) Modes (what they mean)
+
+- strict
+  Most thorough. Runs regex checks and waits for the MiniLM semantic check.
+
+- sync_light
+  Fastest "full" mode. Runs regex checks immediately and runs the semantic check
+  in the background.
+
+- regex_only
+  Regex checks only. Fastest, and does not load the ML model.
+
+4) Compare all modes in one command
+
+  python3 run_guardian.py --input path/to/file.pdf --all-modes
+
+5) Save a machine-readable report (JSON)
+
+  python3 run_guardian.py --input path/to/file.pdf --all-modes --output-json report.json
+
+Notes
+
+- The Guardian writes local runtime logs under ./logs/.
+- The repo is configured to ignore ./logs/ and guardian_report.json so the repo stays clean.
