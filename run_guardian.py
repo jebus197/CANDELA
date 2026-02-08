@@ -25,6 +25,7 @@ import hashlib
 import json
 import os
 import resource
+import socket
 import sys
 import time
 from pathlib import Path
@@ -36,6 +37,30 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 CANONICAL_HASH = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
 MODES = ("strict", "sync_light", "regex_only")
+
+def _host_resolves(host: str) -> bool:
+    try:
+        socket.getaddrinfo(host, 443)
+        return True
+    except OSError:
+        return False
+
+def _configure_hf_offline(offline: bool) -> None:
+    # Keep the CLI clean when DNS/network is unavailable.
+    # If the model is not cached, strict/sync_light will fail with a clear message.
+    if offline:
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+        os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+
+def _ru_maxrss_bytes() -> int:
+    # ru_maxrss units differ by OS:
+    # - macOS: bytes
+    # - Linux: kilobytes
+    v = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform == "darwin":
+        return int(v)
+    return int(v) * 1024
 
 
 # ── text extraction ─────────────────────────────────────────────────────
@@ -116,7 +141,27 @@ def run_one_mode(text: str, mode: str) -> dict:
     Run guardian_chat() in the specified mode.
     Returns verdict + resource metrics.
     """
-    import src.guardian_runtime as rt
+    try:
+        import src.guardian_runtime as rt
+    except Exception as e:
+        # Most common failure: semantic model cannot be fetched and is not cached.
+        msg = str(e)
+        if "HF_HUB_OFFLINE" in os.environ or "TRANSFORMERS_OFFLINE" in os.environ:
+            msg = (
+                "Semantic model unavailable in offline mode. "
+                "Either run once with internet to cache the model, or use --mode regex_only."
+            )
+        return {
+            "mode": mode,
+            "passed": False,
+            "score": 0,
+            "violations": ["runtime_import_failed"],
+            "notes": [msg],
+            "wall_time_ms": 0.0,
+            "cpu_time_ms": 0.0,
+            "mem_rss_kb": 0,
+            "mem_delta_kb": 0,
+        }
 
     # override mode at module level
     rt.MODE = mode
@@ -132,7 +177,7 @@ def run_one_mode(text: str, mode: str) -> dict:
     # clear cache so each mode gets a fresh run
     rt._cache.clear()
 
-    mem_before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    mem_before_b = _ru_maxrss_bytes()
     t_wall = time.perf_counter()
     t_cpu = time.process_time()
 
@@ -140,7 +185,9 @@ def run_one_mode(text: str, mode: str) -> dict:
 
     wall_ms = (time.perf_counter() - t_wall) * 1_000
     cpu_ms = (time.process_time() - t_cpu) * 1_000
-    mem_after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    mem_after_b = _ru_maxrss_bytes()
+    mem_after_kb = int(mem_after_b // 1024)
+    mem_delta_kb = int((mem_after_b - mem_before_b) // 1024)
 
     return {
         "mode": mode,
@@ -150,8 +197,8 @@ def run_one_mode(text: str, mode: str) -> dict:
         "notes": result.get("notes", []),
         "wall_time_ms": round(wall_ms, 2),
         "cpu_time_ms": round(cpu_ms, 2),
-        "mem_rss_kb": mem_after,
-        "mem_delta_kb": mem_after - mem_before,
+        "mem_rss_kb": mem_after_kb,
+        "mem_delta_kb": mem_delta_kb,
     }
 
 
@@ -233,10 +280,19 @@ def main():
         "--output-json", "-o", default=None,
         help="Write machine-readable JSON report to this path",
     )
+    parser.add_argument(
+        "--offline", action="store_true",
+        help="Force offline mode (prevents Hugging Face network calls; requires cached model for semantic modes)",
+    )
     args = parser.parse_args()
 
     if not args.all_modes and args.mode is None:
         args.mode = "strict"
+
+    # Configure Hugging Face offline behavior before importing any runtime modules.
+    auto_offline = not _host_resolves("huggingface.co")
+    offline = bool(args.offline or auto_offline)
+    _configure_hf_offline(offline)
 
     input_path = Path(args.input).resolve()
     if not input_path.exists():
@@ -280,6 +336,7 @@ def main():
             "text_length": len(text),
             "text_sha256": text_hash,
             "extraction_ms": round(extract_ms, 2),
+            "offline": offline,
             "directive_bundle": bundle_info,
             "results": results,
             "merkle": merkle_info,

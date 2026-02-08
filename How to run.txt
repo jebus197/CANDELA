@@ -42,6 +42,16 @@ PDF:
 - regex_only
   Regex checks only. Fastest, and does not load the ML model.
 
+Offline note
+
+If your computer cannot reach Hugging Face (for example, no internet, or DNS is blocked),
+the script will automatically switch to offline mode to keep the console output clean.
+
+In offline mode, strict/sync_light will only work if the MiniLM model has already been
+downloaded (cached) on your machine. If not, either run once with internet access, or use:
+
+  python3 run_guardian.py --input path/to/file.pdf --mode regex_only
+
 4) Compare all modes in one command
 
   python3 run_guardian.py --input path/to/file.pdf --all-modes
