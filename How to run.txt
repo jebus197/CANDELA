@@ -95,6 +95,15 @@ Compare all modes:
 
   python3 demo_model_guardian.py --prompt "Summarise CANDELA in 5 bullet points." --all-modes
 
+Interactive (actively checks every model output):
+
+  python3 demo_model_guardian.py --prompt "Hello" --interactive --mode strict
+
+Periodic anchoring (optional; avoids anchoring every message):
+
+  python3 demo_model_guardian.py --prompt "Hello" --interactive --mode strict --anchor-outputs --anchor-every 20
+  python3 demo_model_guardian.py --prompt "Hello" --interactive --mode strict --anchor-outputs --anchor-interval-min 60
+
 Optional: anchor outputs (requires a local `.env` configured for Sepolia):
 
   python3 demo_model_guardian.py --prompt "Summarise CANDELA in 5 bullet points." --all-modes --anchor-outputs

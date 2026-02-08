@@ -52,6 +52,32 @@ To compare all modes:
 python3 demo_model_guardian.py --prompt "Summarise CANDELA in 5 bullet points." --all-modes
 ```
 
+## Active monitoring (interactive)
+
+To show CANDELA actively checking every model output in a multi-turn session:
+
+```bash
+python3 demo_model_guardian.py --prompt "Hello" --interactive --all-modes
+```
+
+## Periodic anchoring (optional)
+
+You should not anchor every message. Instead, log every message locally and anchor batches periodically.
+
+This demo supports periodic anchoring when `--anchor-outputs` is enabled:
+
+- Anchor every N outputs:
+
+```bash
+python3 demo_model_guardian.py --prompt "Hello" --interactive --mode strict --anchor-outputs --anchor-every 20
+```
+
+- Anchor at most once per T minutes:
+
+```bash
+python3 demo_model_guardian.py --prompt "Hello" --interactive --mode strict --anchor-outputs --anchor-interval-min 60
+```
+
 Optional: anchor outputs (requires a local `.env` configured for Sepolia):
 
 ```bash

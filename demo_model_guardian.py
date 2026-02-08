@@ -14,7 +14,9 @@ This script is intentionally "thin glue" (no new abstractions). It:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -32,6 +34,21 @@ DEFAULT_MODEL_DIR = SCRIPT_DIR / "models" / "TinyLlama-1.1B-Chat-v1.0"
 def _die(msg: str, code: int = 1) -> None:
     print(f"ERROR: {msg}")
     raise SystemExit(code)
+
+def _host_resolves(host: str) -> bool:
+    try:
+        socket.getaddrinfo(host, 443)
+        return True
+    except OSError:
+        return False
+
+def _configure_offline_env(offline: bool) -> None:
+    # Keep console output clean when DNS/network is unavailable.
+    # If models are not cached, generation or semantic checks may fail with clear messages.
+    if offline:
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+        os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
 
 def _load_local_text_model(model_dir: Path):
@@ -109,6 +126,43 @@ def _anchor_outputs_if_requested(anchor: bool) -> None:
     if proc.stdout:
         print(proc.stdout.strip())
 
+def _read_log_lines() -> list[str]:
+    p = SCRIPT_DIR / "logs" / "output_log.jsonl"
+    if not p.exists():
+        return []
+    return p.read_text(encoding="utf-8").splitlines()
+
+def _merkle_root_for_lines(lines: list[str]) -> str | None:
+    if not lines:
+        return None
+    level = [hashlib.sha256(ln.encode("utf-8")).digest() for ln in lines]
+    while len(level) > 1:
+        it = iter(level)
+        nxt = []
+        for a in it:
+            b = next(it, a)
+            nxt.append(hashlib.sha256(a + b).digest())
+        level = nxt
+    return level[0].hex()
+
+def _maybe_periodic_anchor(
+    *,
+    enable: bool,
+    every_n: int,
+    interval_s: int,
+    outputs_seen: int,
+    last_anchor_ts: float | None,
+) -> float | None:
+    if not enable:
+        return last_anchor_ts
+    now = time.time()
+    due_by_count = every_n > 0 and outputs_seen > 0 and outputs_seen % every_n == 0
+    due_by_time = interval_s > 0 and (last_anchor_ts is None or (now - last_anchor_ts) >= interval_s)
+    if due_by_count or due_by_time:
+        _anchor_outputs_if_requested(True)
+        return now
+    return last_anchor_ts
+
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Generate text with a local model, then run CANDELA on it.")
@@ -116,13 +170,22 @@ def main() -> None:
     p.add_argument("--model-dir", default=str(DEFAULT_MODEL_DIR), help="Local model directory (default: models/TinyLlama-1.1B-Chat-v1.0).")
     p.add_argument("--mode", choices=MODES, default=None, help="CANDELA mode (default: strict).")
     p.add_argument("--all-modes", action="store_true", help="Run strict, sync_light, and regex_only.")
+    p.add_argument("--interactive", action="store_true", help="Interactive loop: keep prompting until you type 'exit'.")
+    p.add_argument("--turns", type=int, default=0, help="Max turns in interactive mode (0 = unlimited).")
     p.add_argument("--max-new-tokens", type=int, default=256, help="Generation length cap.")
     p.add_argument("--temperature", type=float, default=0.2, help="Sampling temperature (0 disables sampling).")
     p.add_argument("--anchor-outputs", action="store_true", help="Anchor output log batch on Sepolia (requires .env creds).")
+    p.add_argument("--anchor-every", type=int, default=0, help="If anchoring is enabled, anchor every N outputs (0 disables).")
+    p.add_argument("--anchor-interval-min", type=int, default=0, help="If anchoring is enabled, anchor at most once per T minutes (0 disables).")
+    p.add_argument("--max-print-chars", type=int, default=4000, help="Max characters of model output to print.")
+    p.add_argument("--show-blocked", action="store_true", help="Print blocked model output too (demo only).")
     args = p.parse_args()
 
     mode = "strict" if (not args.all_modes and args.mode is None) else args.mode
     modes = list(MODES) if args.all_modes else [mode]
+
+    offline = not _host_resolves("huggingface.co")
+    _configure_offline_env(offline)
 
     model_dir = Path(args.model_dir).expanduser().resolve()
 
@@ -130,27 +193,88 @@ def main() -> None:
     tok, mdl = _load_local_text_model(model_dir)
     print(f"Model dir: {model_dir}")
 
-    print("\nGenerating output...")
-    generated = _generate(tok, mdl, args.prompt, args.max_new_tokens, args.temperature)
+    outputs_seen = 0
+    last_anchor_ts: float | None = None
+    interval_s = max(0, int(args.anchor_interval_min)) * 60
 
-    print("\n=== Model Output (raw) ===\n")
-    print(generated)
-    print("\n=== CANDELA Verdicts ===\n")
+    def _one_turn(user_prompt: str) -> None:
+        nonlocal outputs_seen, last_anchor_ts
+        before = _read_log_lines()
 
-    for m in modes:
-        v = _run_candela(generated, m)
-        status = "PASS" if v.get("passed") else "FAIL"
-        notes = v.get("notes") or []
-        viols = v.get("violations") or []
-        print(f"- mode={m} result={status} wall={v.get('wall_time_ms')}ms violations={len(viols)}")
-        if viols:
-            print(f"  violations: {viols}")
-        if notes:
-            print(f"  notes: {notes}")
+        print("\nGenerating output...")
+        generated = _generate(tok, mdl, user_prompt, args.max_new_tokens, args.temperature)
+        outputs_seen += 1
 
-    _anchor_outputs_if_requested(args.anchor_outputs)
+        # Run CANDELA first. Only show model output if it passes (or show-blocked is set).
+        verdicts = []
+        for m in modes:
+            verdicts.append(_run_candela(generated, m))
+
+        print("\n=== CANDELA Verdicts ===\n")
+        any_block = False
+        for v in verdicts:
+            status = "PASS" if v.get("passed") else "FAIL"
+            notes = v.get("notes") or []
+            viols = v.get("violations") or []
+            print(f"- mode={v['mode']} result={status} wall={v.get('wall_time_ms')}ms violations={len(viols)}")
+            if viols:
+                print(f"  violations: {viols}")
+            if notes:
+                print(f"  notes: {notes}")
+            if not v.get("passed"):
+                any_block = True
+
+        if (not any_block) or args.show_blocked:
+            out = generated
+            if len(out) > args.max_print_chars:
+                out = out[: args.max_print_chars] + "\n\n[...truncated...]\n"
+            print("\n=== Model Output ===\n")
+            print(out)
+        else:
+            print("\n(Model output blocked; use --show-blocked to print it for demo purposes.)\n")
+
+        after = _read_log_lines()
+        delta = after[len(before):] if len(after) >= len(before) else []
+        root = _merkle_root_for_lines(delta)
+        if root:
+            print("=== Audit Log (This Turn) ===")
+            print(f"New log entries: {len(delta)}")
+            print(f"Delta Merkle root: {root}")
+            print()
+
+        # Periodic anchoring (optional)
+        last_anchor_ts = _maybe_periodic_anchor(
+            enable=bool(args.anchor_outputs),
+            every_n=int(args.anchor_every),
+            interval_s=interval_s,
+            outputs_seen=outputs_seen,
+            last_anchor_ts=last_anchor_ts,
+        )
+
+    if args.interactive:
+        print("\nInteractive mode: type your prompt and press Enter. Type 'exit' to stop.\n")
+        turns_left = int(args.turns)
+        while True:
+            if turns_left == 0 and args.turns > 0:
+                break
+            try:
+                user_prompt = input("You> ").strip()
+            except EOFError:
+                break
+            if not user_prompt:
+                continue
+            if user_prompt.lower() in ("exit", "quit"):
+                break
+            _one_turn(user_prompt)
+            if args.turns > 0:
+                turns_left -= 1
+    else:
+        _one_turn(args.prompt)
+
+    # Always allow a final anchor at exit if anchoring is enabled and periodic triggers never fired.
+    if args.anchor_outputs and (args.anchor_every == 0 and args.anchor_interval_min == 0):
+        _anchor_outputs_if_requested(True)
 
 
 if __name__ == "__main__":
     main()
-
