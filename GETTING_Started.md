@@ -1,81 +1,39 @@
-# CANDELA – Quick-Start Guide (v0.3)
+# CANDELA - Quick-Start Guide (v0.3)
 
-> **Goal:** run the proof-of-concept, anchor the directive-bundle hash on Sepolia test-net, and verify it on Etherscan in ≈ 10 minutes.
+This page is intentionally short. The full reviewer run guide lives at:
+- `docs/RUNNING.md`
 
----
+## 1) Clone and install
 
-## 1 · Clone & install
 ```bash
-git clone https://github.com/<your-user>/CANDELA.git
+git clone https://github.com/jebus197/CANDELA.git
 cd CANDELA
 python3 -m pip install -r requirements.txt
 ```
-*Python 3.9+ recommended. `requirements.txt` installs `web3`, `python-dotenv`, `requests`, **`sentence-transformers` and `torch` (large downloads; first install may take a minute).***
 
----
+Note: `requirements.txt` includes `torch` and `sentence-transformers` (larger downloads).
 
-## 2 · Grab free Sepolia ETH (≈ 0.05 SEPETH)
+## 2) Run the Guardian against a file
 
-1. Open <https://cloud.google.com/application/web3/faucet/ethereum/sepolia>  
-2. Paste **your** Sepolia wallet address → solve captcha → **Send tokens**  
-3. In MetaMask (network = “Sepolia Test Network”) you should see the new balance.
-
-*(Alternate faucets listed in `docs/TESTNET_FAUCET.md`.)*
-
----
-
-## 3 · Create local secrets file
-
-1. In the repo root, make a file called `.env`  
-2. Paste:
-   ```ini
-   SEPOLIA_RPC_URL="https://sepolia.infura.io/v3/<your-project-id>"
-   SEPOLIA_PRIVATE_KEY="0x<your-private-key>"
-   ```
-3. Save. **Do not commit `.env`** – it stays local.
-
----
-
-## 4 · Print the directive SHA-256 hash
 ```bash
-python3 src/guardian_prototype.py
+python3 run_guardian.py --input path/to/file.txt --mode strict
 ```
-You should see something like  
-`Directive bundle SHA-256 : 3cf5a9178cf7d…`
 
----
+You should see a clear PASS/FAIL plus a short list of reasons.
 
-## 5 · Anchor the hash on-chain
+## 3) Optional: run tests (sanity check)
+
 ```bash
-python3 src/anchor_hash.py
+python3 -m pytest -q
 ```
-Sample output:
-```
-✅ Hash anchored on Sepolia
-Directive SHA-256 : 3cf5a9178cf7d…
-Tx hash          : 0xabc123…
-Explorer link    : https://sepolia.etherscan.io/tx/0xabc123…
-```
-Open the link and confirm **Input Data == the hash** printed earlier.  
-(Optional) paste that Explorer URL into the README under “On-chain record”.
 
----
+## 4) Optional: anchoring (tamper-evident receipts)
 
-## 6 · (optional) Run the minimal test-suite
-```bash
-pytest -q
-```
-Should finish with `3 passed in …s`.
+If you want on-chain receipts, follow:
+- `docs/RUNNING.md` (Anchoring section)
+- `docs/ANCHORS.md` (what has already been anchored)
 
----
+## Next: model integration demo (optional)
 
-### 6b · (optional) Anchor recent outputs
-```bash
-python3 src/anchor_outputs.py
-```
-Anchors a Merkle root for all new entries in `logs/output_log.jsonl` and appends the tx to `docs/ANCHORS.md`.
-
-### You’re done 🎉
-The PoC proves: **directive bundle → hash → public blockchain → human-verifiable link**, and adds optional output provenance via Merkle-root anchoring.
-
-Next milestones are in `ROADMAP.md` – start with the validation tier and wallet field.
+If you want to see CANDELA checking a model's generated output live, use:
+- `docs/MODEL_INTEGRATION.md`
