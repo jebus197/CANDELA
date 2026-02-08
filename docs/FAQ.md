@@ -114,7 +114,17 @@ Key next steps, as outlined in our [ROADMAP.md](ROADMAP.md), include:
 
 ---
 
-### 11. How can I get involved or learn more?
+### 11. Does CANDELA store my data?
+
+By default (demo-friendly), CANDELA stores checked outputs in a local append-only log at `logs/output_log.jsonl` so you have an audit trail and can build Merkle proofs.
+
+If you are working with sensitive content, you can configure logging to store hashes/metadata only (no full text) via `config/guardian_scoring.yaml` under `logging:`.
+
+On-chain anchoring stores only a Merkle root fingerprint, not the full text.
+
+---
+
+### 12. How can I get involved or learn more?
 
 * Explore our GitHub Repository: [https://github.com/jebus197/CANDELA](https://github.com/jebus197/CANDELA)
 * Read the [Project Brief](PROJECT_BRIEF.md).

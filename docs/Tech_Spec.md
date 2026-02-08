@@ -173,6 +173,7 @@ The `src/directives_schema.json` file includes a `validation_criteria` field for
 * **Blockchain Private Key Security:** The private key for the anchoring wallet must be kept secure. For PoC/MVP on testnet, risk is low, but good practices are essential.
 * **Prompt Injection:** While directives aim to constrain output, sophisticated prompt injection techniques against the LLM itself remain a general concern. The Guardian's output validation is a layer of defense.
 * **Data Privacy:** Ensure no sensitive user data is inadvertently included in hashes or logs anchored on a public blockchain. Hash only non-sensitive metadata or content fingerprints.
+* **Local Logging Privacy:** In v0.3, outputs are logged locally for auditability. This can be configured to store full text (demo/debug friendly) or hash-only metadata (safer for sensitive content) via `config/guardian_scoring.yaml` under `logging:`.
 
 ---
 

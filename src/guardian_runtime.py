@@ -27,6 +27,10 @@ ENFORCE_CONFIDENCE = bool(VAL_CFG.get("enforce_confidence_tag", False))
 ENFORCE_UNCERTAIN = bool(VAL_CFG.get("enforce_uncertain_tag", False))
 ENFORCE_MICROFORMATS = bool(VAL_CFG.get("enforce_microformats", True))
 
+LOG_CFG = CFG.get("logging", {}) or {}
+LOG_STORE_TEXT = bool(LOG_CFG.get("store_text", True))
+LOG_PREVIEW_CHARS = int(LOG_CFG.get("text_preview_chars", 0) or 0)
+
 DIRECTIVES_HASH  = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
 _cache: Dict[str, Tuple[float, dict]] = {}
 LOG_DIR   = Path("logs")
@@ -71,9 +75,16 @@ def _log_output(text: str, res: dict):
         "latency_budget_ms": BUDGET_MS,
         "directive_hash": DIRECTIVES_HASH,
         "text_sha256": _sha(text),
-        "text": text,
+        "text_len": len(text),
         "verdict": res,
     }
+    if LOG_STORE_TEXT:
+        entry["text"] = text
+    elif LOG_PREVIEW_CHARS > 0:
+        preview = text[:LOG_PREVIEW_CHARS]
+        if len(text) > LOG_PREVIEW_CHARS:
+            preview += "\n\n[...truncated...]\n"
+        entry["text_preview"] = preview
     LOG_FILE.open("a", encoding="utf-8").write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 def _warm_semantic():

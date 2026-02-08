@@ -17,3 +17,10 @@ validation:
   enforce_uncertain_tag: false
   # If true, validate micro-directive formats only when output opts into their structure.
   enforce_microformats: true
+
+# output logging (audit trail)
+# store_text: if false, logs store hashes/metadata only (safer for sensitive content)
+logging:
+  store_text: true
+  # If store_text is false, optionally store a short preview (0 = none).
+  text_preview_chars: 0
