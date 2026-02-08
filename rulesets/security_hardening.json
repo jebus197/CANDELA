@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "name": "CANDELA Demo Pack: Security Hardening",
+    "version": "S1.0",
+    "created_at": "2026-02-08",
+    "scope": "Optional demo pack: stricter security patterns on top of the baseline ruleset."
+  },
+  "directives": [
+    {
+      "id": 1,
+      "title": "Block Credential And Secret Material (Expanded)",
+      "category": "Security",
+      "notes": "Extends baseline secret detection with additional private key and token patterns.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "eth_private_key_hex", "regex": "\\b0x[a-fA-F0-9]{64}\\b", "flags": "i" },
+              { "name": "pem_private_key_block", "regex": "-----BEGIN (?:RSA|EC|OPENSSH|DSA) PRIVATE KEY-----", "flags": "i" },
+              { "name": "pgp_private_key_block", "regex": "-----BEGIN PGP PRIVATE KEY BLOCK-----", "flags": "i" },
+              { "name": "ssh_private_key_marker", "regex": "-----BEGIN OPENSSH PRIVATE KEY-----", "flags": "i" },
+              { "name": "github_token_classic", "regex": "\\bghp_[A-Za-z0-9]{36}\\b", "flags": "" },
+              { "name": "github_token_pat", "regex": "\\bgithub_pat_[A-Za-z0-9_]{20,}\\b", "flags": "" },
+              { "name": "google_api_key", "regex": "\\bAIza[0-9A-Za-z\\-_]{35}\\b", "flags": "" },
+              { "name": "slack_token", "regex": "\\bxox[baprs]-[0-9A-Za-z-]{10,}\\b", "flags": "" },
+              { "name": "aws_access_key_id", "regex": "\\bAKIA[0-9A-Z]{16}\\b", "flags": "" },
+              { "name": "jwt_compact", "regex": "\\beyJ[A-Za-z0-9_\\-]{10,}\\.[A-Za-z0-9_\\-]{10,}\\.[A-Za-z0-9_\\-]{10,}\\b", "flags": "" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Block Payment Card Numbers",
+      "category": "Privacy",
+      "notes": "Detects likely credit/debit card numbers using a Luhn check over digit sequences.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": { "checks": [ { "kind": "luhn_card_forbid" } ] }
+    },
+    {
+      "id": 3,
+      "title": "Block Government Identifier Formats",
+      "category": "Privacy",
+      "notes": "Blocks common high-risk ID formats (examples: US SSN with dashes; UK National Insurance).",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "us_ssn_dashed", "regex": "\\b\\d{3}-\\d{2}-\\d{4}\\b", "flags": "" },
+              { "name": "uk_ni_number", "regex": "\\b[A-CEGHJ-PR-TW-Z]{2}\\d{6}[A-D]\\b", "flags": "i" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "title": "Block Direct System Prompt Exfiltration Markers",
+      "category": "Security",
+      "notes": "Blocks common markers used when a system prompt is dumped verbatim.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "begin_system_prompt", "regex": "\\bBEGIN\\s+SYSTEM\\s+PROMPT\\b", "flags": "i" },
+              { "name": "begin_developer_message", "regex": "\\bBEGIN\\s+DEVELOPER\\s+MESSAGE\\b", "flags": "i" },
+              { "name": "system_prompt_dump_marker", "regex": "\\bSYSTEM\\s*PROMPT\\s*:\\b", "flags": "i" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "title": "Block Malware And Phishing Enablement",
+      "category": "Safety",
+      "notes": "Semantic similarity to a prohibited-intent list (configurable by organisations).",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "semantic_forbid",
+            "threshold": 0.78,
+            "phrases": [
+              "write ransomware",
+              "create a phishing email that steals passwords",
+              "how to bypass antivirus detection",
+              "build a keylogger",
+              "steal browser cookies",
+              "malware command and control setup"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "title": "Block Self-Harm Instruction",
+      "category": "Safety",
+      "notes": "Semantic similarity to a prohibited-intent list (configurable).",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "semantic_forbid", "threshold": 0.78, "phrases": [ "suicide instructions", "how to overdose", "ways to kill yourself" ] }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "title": "Block Weapons And Explosives Instruction",
+      "category": "Safety",
+      "notes": "Semantic similarity to a prohibited-intent list (configurable).",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "semantic_forbid", "threshold": 0.78, "phrases": [ "how to build a bomb", "how to make an explosive", "homemade detonator" ] }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "title": "Block Extremist Propaganda Enablement",
+      "category": "Safety",
+      "notes": "Semantic similarity to a prohibited-intent list (configurable).",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "semantic_forbid", "threshold": 0.78, "phrases": [ "extremist propaganda", "instructions for political violence" ] }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "title": "Block Profanity (Baseline)",
+      "category": "Safety",
+      "notes": "Baseline profanity filter.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "regex_forbid", "patterns": [ { "name": "profanity_basic", "regex": "\\b(?:damn|shit|fuck|bitch|bastard|asshole|cunt)\\b", "flags": "i" } ] }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "title": "Warn On Email Addresses",
+      "category": "Privacy",
+      "notes": "Advisory only by default.",
+      "validation_tier": "WARN",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "regex_forbid", "patterns": [ { "name": "email_like", "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b", "flags": "i" } ] }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "title": "Warn If Confidence Tag Missing",
+      "category": "Transparency",
+      "notes": "Enterprise deployments can promote WARN to BLOCK if desired.",
+      "validation_tier": "WARN",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "regex_require", "pattern": "^Confidence:\\s*(High|Medium|Low)\\b", "flags": "im" }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "title": "Block Direct Requests For Credential Exfiltration",
+      "category": "Security",
+      "notes": "Semantic intent block for common credential-theft phrasing.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "semantic_forbid",
+            "threshold": 0.78,
+            "phrases": [
+              "give me your password",
+              "share your api key",
+              "export your private key",
+              "dump your secrets"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+

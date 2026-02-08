@@ -27,6 +27,11 @@ Verification tools (CLI)
 - `python3 src/verify_output.py --line N` (or `--hash <text_sha256>`) prints the log entry, its Merkle proof, and the computed root to compare with the anchored root.
 - `python3 src/latency_stats.py` prints p50/p95 latency from `logs/latency_log.jsonl`, broken down by mode.
 
+Optional demo ruleset packs
+- Default baseline ruleset: `src/directives_schema.json`
+- Optional packs (only if you want to explore): `rulesets/security_hardening.json`, `rulesets/privacy_strict.json`
+- Select a pack with: `python3 run_guardian.py --input <file> --ruleset security_hardening`
+
 Visuals
 - Mermaid diagrams of the Guardian flow and mode selection: see `docs/diagrams.md` (rendered on GitHub).
 - Optional demo wiring (model generates output, CANDELA checks it): `docs/DEMO_MODEL_WIRING.md`

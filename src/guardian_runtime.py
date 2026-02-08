@@ -6,11 +6,11 @@ Fast governance wrapper with:
 Safe: standalone file, no edits needed elsewhere except import hook below.
 """
 from __future__ import annotations
-import hashlib, json, threading, time, yaml
+import hashlib, json, os, threading, time, yaml
 from pathlib import Path
 from typing import Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor
-from .directive_validation import canonical_ruleset_sha256, validate_output as _validate_directives
+from .directive_validation import canonical_ruleset_sha256, ruleset_path, validate_output as _validate_directives
 
 # ── config --------------------------------------------------------------
 CFG = yaml.safe_load(Path("config/guardian_scoring.yaml").read_text("utf-8"))
@@ -24,8 +24,9 @@ LOG_CFG = CFG.get("logging", {}) or {}
 LOG_STORE_TEXT = bool(LOG_CFG.get("store_text", True))
 LOG_PREVIEW_CHARS = int(LOG_CFG.get("text_preview_chars", 0) or 0)
 
-# Derived from the canonical JSON of src/directives_schema.json.
-DIRECTIVES_HASH = canonical_ruleset_sha256()
+# Derived from the canonical JSON of the selected ruleset (default: src/directives_schema.json).
+RULESET_PATH = ruleset_path()
+DIRECTIVES_HASH = canonical_ruleset_sha256(RULESET_PATH)
 _cache: Dict[str, Tuple[float, dict]] = {}
 LOG_DIR   = Path("logs")
 LOG_FILE  = LOG_DIR / "output_log.jsonl"
@@ -68,6 +69,7 @@ def _log_output(text: str, res: dict):
         "semantic_enabled": bool(SEM_ENABLED),
         "semantic_threshold": THRESHOLD if SEM_ENABLED else None,
         "latency_budget_ms": BUDGET_MS,
+        "ruleset_path": str(RULESET_PATH),
         "directive_hash": DIRECTIVES_HASH,
         "text_sha256": _sha(text),
         "text_len": len(text),

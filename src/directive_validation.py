@@ -18,6 +18,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+import os
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +32,22 @@ _RULESET_CACHE: Dict[str, Any] | None = None
 _RULESET_MTIME: float | None = None
 
 
+def ruleset_path(default: Path = DIRECTIVES_PATH) -> Path:
+    """
+    Canonical ruleset path resolution.
+
+    - Default is src/directives_schema.json
+    - Override is supported via CANDELA_RULESET_PATH (absolute or repo-relative)
+    """
+    override = os.getenv("CANDELA_RULESET_PATH")
+    if override:
+        p = Path(override)
+        if not p.is_absolute():
+            p = (ROOT / p).resolve()
+        return p
+    return default
+
+
 @dataclass(frozen=True)
 class Finding:
     directive_id: int
@@ -39,8 +56,10 @@ class Finding:
     message: str
 
 
-def load_ruleset(path: Path = DIRECTIVES_PATH) -> Dict[str, Any]:
+def load_ruleset(path: Optional[Path] = None) -> Dict[str, Any]:
     global _RULESET_CACHE, _RULESET_MTIME
+    if path is None:
+        path = ruleset_path()
     try:
         mtime = path.stat().st_mtime
     except FileNotFoundError:
@@ -70,11 +89,13 @@ def get_directives(ruleset: Dict[str, Any]) -> List[Dict[str, Any]]:
     return out
 
 
-def canonical_ruleset_sha256(path: Path = DIRECTIVES_PATH) -> str:
+def canonical_ruleset_sha256(path: Optional[Path] = None) -> str:
     """
     Must match src/anchor_hash.py:
       json.dumps(obj, sort_keys=True, ensure_ascii=False).encode("utf-8")
     """
+    if path is None:
+        path = ruleset_path()
     obj = json.loads(path.read_text(encoding="utf-8"))
     canonical = json.dumps(obj, sort_keys=True, ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(canonical).hexdigest()
@@ -125,6 +146,7 @@ def _find_luhn_cards(text: str) -> List[str]:
 def validate_output(
     text: str,
     *,
+    ruleset: Optional[Dict[str, Any]] = None,
     include_semantic: bool,
     semantic_matcher: Optional[SemanticMatcher] = None,
 ) -> List[Finding]:
@@ -134,8 +156,8 @@ def validate_output(
     - include_semantic controls whether semantic_forbid checks are evaluated.
     - semantic_matcher is required when include_semantic is True.
     """
-    ruleset = load_ruleset()
-    directives = get_directives(ruleset)
+    rs = ruleset if ruleset is not None else load_ruleset()
+    directives = get_directives(rs)
 
     findings: List[Finding] = []
 

@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "name": "CANDELA Demo Pack: Privacy Strict",
+    "version": "P1.0",
+    "created_at": "2026-02-08",
+    "scope": "Optional demo pack: stricter privacy heuristics on top of the baseline ruleset."
+  },
+  "directives": [
+    {
+      "id": 1,
+      "title": "Block Credential And Secret Material",
+      "category": "Security",
+      "notes": "Blocks common credential and private-key formats.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "eth_private_key_hex", "regex": "\\b0x[a-fA-F0-9]{64}\\b", "flags": "i" },
+              { "name": "pem_private_key_block", "regex": "-----BEGIN (?:RSA|EC|OPENSSH|DSA) PRIVATE KEY-----", "flags": "i" },
+              { "name": "github_token_classic", "regex": "\\bghp_[A-Za-z0-9]{36}\\b", "flags": "" },
+              { "name": "github_token_pat", "regex": "\\bgithub_pat_[A-Za-z0-9_]{20,}\\b", "flags": "" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Block Payment Card Numbers",
+      "category": "Privacy",
+      "notes": "Detects likely credit/debit card numbers using a Luhn check over digit sequences.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": { "checks": [ { "kind": "luhn_card_forbid" } ] }
+    },
+    {
+      "id": 3,
+      "title": "Block Government Identifier Formats",
+      "category": "Privacy",
+      "notes": "Blocks common high-risk ID formats (examples: US SSN with dashes; UK National Insurance).",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "us_ssn_dashed", "regex": "\\b\\d{3}-\\d{2}-\\d{4}\\b", "flags": "" },
+              { "name": "uk_ni_number", "regex": "\\b[A-CEGHJ-PR-TW-Z]{2}\\d{6}[A-D]\\b", "flags": "i" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "title": "Block Email Addresses",
+      "category": "Privacy",
+      "notes": "In strict privacy contexts, email addresses should not be emitted.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "email_like", "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b", "flags": "i" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "title": "Block Phone Number Patterns",
+      "category": "Privacy",
+      "notes": "Heuristic block for phone-like strings. Can false-positive; intended only for strict privacy demos.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "phone_like", "regex": "\\b(?:\\+?\\d{1,3}[-.\\s]?)?(?:\\(\\d{2,4}\\)|\\d{2,4})[-.\\s]?\\d{3}[-.\\s]?\\d{3,4}\\b", "flags": "" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "title": "Block Mailing Address Indicators (Heuristic)",
+      "category": "Privacy",
+      "notes": "Heuristic for postal address-like lines (street + number). Demo-only; not a legal classifier.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "street_number", "regex": "\\b\\d{1,5}\\s+(?:[A-Za-z]+\\s+){0,3}(?:Street|St|Road|Rd|Avenue|Ave|Lane|Ln|Drive|Dr|Boulevard|Blvd)\\b", "flags": "i" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "title": "Warn If Confidence Tag Missing",
+      "category": "Transparency",
+      "notes": "Optional transparency signal; not privacy-specific but useful in reports.",
+      "validation_tier": "WARN",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "regex_require", "pattern": "^Confidence:\\s*(High|Medium|Low)\\b", "flags": "im" }
+        ]
+      }
+    }
+  ]
+}
+

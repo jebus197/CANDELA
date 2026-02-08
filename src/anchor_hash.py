@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 anchor_hash.py
-Anchor the current SHA-256 of src/directives_schema.json to Ethereum Sepolia.
+Anchor the current SHA-256 of a ruleset JSON file to Ethereum Sepolia.
 
 • Reads the directives file
 • Computes SHA-256
@@ -13,6 +13,7 @@ import os
 import json
 import time
 import hashlib
+import argparse
 from pathlib import Path
 
 from web3 import Web3, HTTPProvider
@@ -28,13 +29,27 @@ load_dotenv()                                                     # .env file
 
 RPC_URL      = os.getenv("SEPOLIA_RPC_URL")                      # Alchemy URL
 PRIVATE_KEY  = os.getenv("PRIVATE_KEY") or os.getenv("SEPOLIA_PRIVATE_KEY")
-DIR_FILE     = Path("src/directives_schema.json")                # Rule-set
 
 if not RPC_URL or not PRIVATE_KEY:
     raise SystemExit(
         "Missing SEPOLIA_RPC_URL and/or PRIVATE_KEY (or SEPOLIA_PRIVATE_KEY). "
         "Add them to a .env file in the repo root."
     )
+
+ap = argparse.ArgumentParser(description="Anchor the canonical SHA-256 of a ruleset JSON file on Sepolia.")
+ap.add_argument(
+    "--path",
+    default="src/directives_schema.json",
+    help="Ruleset JSON path (default: src/directives_schema.json).",
+)
+args = ap.parse_args()
+
+DIR_FILE = Path(args.path).expanduser()
+if not DIR_FILE.is_absolute():
+    DIR_FILE = Path(".") / DIR_FILE
+DIR_FILE = DIR_FILE.resolve()
+if not DIR_FILE.exists():
+    raise SystemExit(f"Ruleset file not found: {DIR_FILE}")
 
 w3 = Web3(HTTPProvider(RPC_URL))
 acct = Account.from_key(PRIVATE_KEY)

@@ -36,7 +36,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 os.chdir(SCRIPT_DIR)
 sys.path.insert(0, str(SCRIPT_DIR))
 
-CANONICAL_HASH = "7b8d69ce1ca0a4c03e764b7c8f4f2dc64416dfc6a0081876ce5ff9f53a90c73d"
 MODES = ("strict", "sync_light", "regex_only")
 
 def _host_resolves(host: str) -> bool:
@@ -45,6 +44,28 @@ def _host_resolves(host: str) -> bool:
         return True
     except OSError:
         return False
+
+def _resolve_ruleset_arg(arg: str | None) -> Path:
+    """
+    Resolve a reviewer-friendly ruleset selector.
+
+    Default is the canonical baseline: src/directives_schema.json
+    Optional packs live in ./rulesets/.
+    """
+    if not arg or arg.strip().lower() in ("baseline", "default"):
+        return (SCRIPT_DIR / "src" / "directives_schema.json").resolve()
+
+    a = arg.strip()
+    low = a.lower()
+    if low in ("security", "security_hardening"):
+        return (SCRIPT_DIR / "rulesets" / "security_hardening.json").resolve()
+    if low in ("privacy", "privacy_strict"):
+        return (SCRIPT_DIR / "rulesets" / "privacy_strict.json").resolve()
+
+    p = Path(a).expanduser()
+    if not p.is_absolute():
+        p = (SCRIPT_DIR / p).resolve()
+    return p
 
 def _configure_hf_offline(offline: bool) -> None:
     # Keep the CLI clean when DNS/network is unavailable.
@@ -91,17 +112,32 @@ def extract_text(filepath: Path) -> str:
 
 
 # ── directive bundle hash ───────────────────────────────────────────────
-def compute_bundle_hash() -> dict:
-    """Load directives, compute SHA-256 bundle hash, check canonical match."""
-    schema_path = SCRIPT_DIR / "src" / "directives_schema.json"
-    with schema_path.open("r", encoding="utf-8") as f:
-        directives = json.load(f)
-    canonical = json.dumps(directives, sort_keys=True, ensure_ascii=False)
+def _hash_is_recorded_in_anchors(digest: str) -> bool:
+    anchors = SCRIPT_DIR / "docs" / "ANCHORS.md"
+    if not anchors.exists():
+        return False
+    return f"`{digest}`" in anchors.read_text(encoding="utf-8")
+
+def compute_bundle_hash(ruleset_path: Path) -> dict:
+    """Load selected ruleset, compute canonical SHA-256, and check if it is logged in docs/ANCHORS.md."""
+    with ruleset_path.open("r", encoding="utf-8") as f:
+        obj = json.load(f)
+    canonical = json.dumps(obj, sort_keys=True, ensure_ascii=False)
     bundle_hash = hashlib.sha256(canonical.encode()).hexdigest()
+
+    # Support both modern dict shape and legacy list shape.
+    if isinstance(obj, dict) and isinstance(obj.get("directives"), list):
+        directive_count = len(obj["directives"])
+    elif isinstance(obj, list):
+        directive_count = len(obj)
+    else:
+        directive_count = 0
+
     return {
+        "ruleset_path": str(ruleset_path),
         "directive_bundle_hash": bundle_hash,
-        "directive_count": len(directives),
-        "canonical_match": bundle_hash == CANONICAL_HASH,
+        "directive_count": directive_count,
+        "hash_recorded_in_docs": _hash_is_recorded_in_anchors(bundle_hash),
     }
 
 
@@ -271,10 +307,11 @@ def print_header(input_path: str, text_len: int, text_hash: str):
 
 def print_bundle_info(info: dict):
     print("── Directive Bundle ──────────────────────────────────────────")
+    print(f"  Ruleset path:      {info['ruleset_path']}")
     print(f"  Directives loaded: {info['directive_count']}")
     print(f"  Bundle SHA-256:    {info['directive_bundle_hash']}")
-    match = "YES" if info["canonical_match"] else "NO — MISMATCH"
-    print(f"  Canonical match:   {match}")
+    recorded = "YES" if info["hash_recorded_in_docs"] else "NO"
+    print(f"  Hash in ANCHORS.md:{recorded}")
     print()
 
 
@@ -344,6 +381,13 @@ def main():
         "--anchor-outputs", action="store_true",
         help="Anchor the output log batch on Sepolia (Merkle root). Requires .env with SEPOLIA_RPC_URL and PRIVATE_KEY.",
     )
+    parser.add_argument(
+        "--ruleset", default="baseline",
+        help=(
+            "Ruleset selector (optional). "
+            "Use baseline (default), security_hardening, privacy_strict, or a file path."
+        ),
+    )
     args = parser.parse_args()
 
     if not args.all_modes and args.mode is None:
@@ -359,6 +403,13 @@ def main():
         print(f"ERROR: File not found: {input_path}")
         sys.exit(1)
 
+    ruleset_path = _resolve_ruleset_arg(args.ruleset)
+    if not ruleset_path.exists():
+        print(f"ERROR: Ruleset not found: {ruleset_path}")
+        sys.exit(1)
+    # Set once before runtime import (guardian_runtime reads this at import time).
+    os.environ["CANDELA_RULESET_PATH"] = str(ruleset_path)
+
     # ── extract text ──
     print(f"\nExtracting text from {input_path.name} ...")
     t0 = time.perf_counter()
@@ -368,7 +419,7 @@ def main():
     print(f"  Done ({extract_ms:.0f} ms, {len(text):,} chars)\n")
 
     # ── bundle hash ──
-    bundle_info = compute_bundle_hash()
+    bundle_info = compute_bundle_hash(ruleset_path)
 
     # ── print header ──
     print_header(str(input_path), len(text), text_hash)

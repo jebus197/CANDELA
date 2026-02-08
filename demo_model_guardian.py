@@ -179,7 +179,32 @@ def main() -> None:
     p.add_argument("--anchor-interval-min", type=int, default=0, help="If anchoring is enabled, anchor at most once per T minutes (0 disables).")
     p.add_argument("--max-print-chars", type=int, default=4000, help="Max characters of model output to print.")
     p.add_argument("--show-blocked", action="store_true", help="Print blocked model output too (demo only).")
+    p.add_argument(
+        "--ruleset",
+        default="baseline",
+        help="Ruleset selector (optional). Use baseline (default), security_hardening, privacy_strict, or a file path.",
+    )
     args = p.parse_args()
+
+    # Resolve ruleset selector and set env before importing CANDELA runtime.
+    def _resolve_ruleset_arg(arg: str | None) -> Path:
+        if not arg or arg.strip().lower() in ("baseline", "default"):
+            return (SCRIPT_DIR / "src" / "directives_schema.json").resolve()
+        a = arg.strip()
+        low = a.lower()
+        if low in ("security", "security_hardening"):
+            return (SCRIPT_DIR / "rulesets" / "security_hardening.json").resolve()
+        if low in ("privacy", "privacy_strict"):
+            return (SCRIPT_DIR / "rulesets" / "privacy_strict.json").resolve()
+        p = Path(a).expanduser()
+        if not p.is_absolute():
+            p = (SCRIPT_DIR / p).resolve()
+        return p
+
+    ruleset_path = _resolve_ruleset_arg(args.ruleset)
+    if not ruleset_path.exists():
+        _die(f"Ruleset not found: {ruleset_path}")
+    os.environ["CANDELA_RULESET_PATH"] = str(ruleset_path)
 
     mode = "strict" if (not args.all_modes and args.mode is None) else args.mode
     modes = list(MODES) if args.all_modes else [mode]

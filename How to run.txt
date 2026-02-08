@@ -70,6 +70,20 @@ without putting the whole text on-chain).
 
   python3 run_guardian.py --input path/to/file.pdf --all-modes --anchor-outputs
 
+6b) (Optional) Pick a demo ruleset pack
+
+Default ruleset (no flag needed):
+- baseline: ./src/directives_schema.json
+
+Optional packs (only if you want to explore):
+- security_hardening: stricter security patterns
+- privacy_strict: stricter privacy heuristics
+
+Examples:
+
+  python3 run_guardian.py --input path/to/file.pdf --mode strict --ruleset security_hardening
+  python3 run_guardian.py --input path/to/file.pdf --mode strict --ruleset privacy_strict
+
 7) (Optional demo) Wire CANDELA into a local model (active monitoring)
 
 This demo shows the intended end-state: a model generates text, then CANDELA checks it
@@ -90,6 +104,10 @@ Place the model files into:
 Step C: run the demo
 
   python3 demo_model_guardian.py --prompt "Explain what a Merkle root is in one paragraph." --mode strict
+
+Use an optional ruleset pack:
+
+  python3 demo_model_guardian.py --prompt "Hello" --mode strict --ruleset security_hardening
 
 Compare all modes:
 

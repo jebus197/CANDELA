@@ -46,6 +46,12 @@ From the CANDELA repo root:
 python3 demo_model_guardian.py --prompt "Explain what a Merkle root is in one paragraph." --mode strict
 ```
 
+Optional: select a demo ruleset pack (baseline is default):
+
+```bash
+python3 demo_model_guardian.py --prompt "Hello" --mode strict --ruleset security_hardening
+```
+
 To compare all modes:
 
 ```bash
