@@ -28,6 +28,7 @@ Verification tools (CLI)
 
 Visuals
 - Mermaid diagrams of the Guardian flow and mode selection: see `docs/diagrams.md` (rendered on GitHub).
+- Optional demo wiring (model generates output, CANDELA checks it): `docs/DEMO_MODEL_WIRING.md`
 
 Validation coverage
 - What is enforced vs. documented intent: `docs/VALIDATION_COVERAGE.md`

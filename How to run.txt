@@ -44,7 +44,7 @@ PDF:
 
 Offline note
 
-If your computer cannot reach Hugging Face (for example, no internet, or DNS is blocked),
+If your computer cannot reach the model download host (for example, no internet, or DNS is blocked),
 the script will automatically switch to offline mode to keep the console output clean.
 
 In offline mode, strict/sync_light will only work if the MiniLM model has already been
@@ -69,6 +69,35 @@ of the new log entries on Sepolia (so you can later prove a specific output was 
 without putting the whole text on-chain).
 
   python3 run_guardian.py --input path/to/file.pdf --all-modes --anchor-outputs
+
+7) (Optional demo) Wire CANDELA into a local model (active monitoring)
+
+This demo shows the intended end-state: a model generates text, then CANDELA checks it
+immediately and writes an audit log entry.
+
+Step A: install the demo dependency (not required for CANDELA itself)
+
+  python3 -m pip install transformers
+
+Step B: download a small model into the CANDELA folder
+
+Place the model files into:
+
+  ./models/TinyLlama-1.1B-Chat-v1.0/
+
+(This should be a normal model "snapshot" folder: config + tokenizer + weights.)
+
+Step C: run the demo
+
+  python3 demo_model_guardian.py --prompt "Explain what a Merkle root is in one paragraph." --mode strict
+
+Compare all modes:
+
+  python3 demo_model_guardian.py --prompt "Summarise CANDELA in 5 bullet points." --all-modes
+
+Optional: anchor outputs (requires a local `.env` configured for Sepolia):
+
+  python3 demo_model_guardian.py --prompt "Summarise CANDELA in 5 bullet points." --all-modes --anchor-outputs
 
 Notes
 
