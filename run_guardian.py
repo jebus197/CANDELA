@@ -26,6 +26,7 @@ import json
 import os
 import resource
 import socket
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -114,6 +115,31 @@ def compute_merkle_root() -> dict | None:
     if not lines:
         return None
 
+    def merkle(hashes: list[bytes]) -> bytes:
+        level = hashes
+        while len(level) > 1:
+            it = iter(level)
+            nxt = []
+            for a in it:
+                b = next(it, a)
+                nxt.append(hashlib.sha256(a + b).digest())
+            level = nxt
+        return level[0]
+
+    def leaf(line: str) -> bytes:
+        return hashlib.sha256(line.encode("utf-8")).digest()
+
+    leaves = [leaf(l) for l in lines]
+    return {
+        "merkle_root": merkle(leaves).hex(),
+        "log_entries": len(lines),
+    }
+
+def compute_merkle_root_for_lines(lines: list[str]) -> dict | None:
+    """Compute Merkle root over provided JSONL lines (or return None if empty)."""
+    if not lines:
+        return None
+
     def leaf(line: str) -> bytes:
         return hashlib.sha256(line.encode("utf-8")).digest()
 
@@ -129,10 +155,40 @@ def compute_merkle_root() -> dict | None:
         return level[0]
 
     leaves = [leaf(l) for l in lines]
-    return {
-        "merkle_root": merkle(leaves).hex(),
-        "log_entries": len(lines),
-    }
+    return {"merkle_root": merkle(leaves).hex(), "log_entries": len(lines)}
+
+def maybe_anchor_outputs(allow_anchor: bool) -> dict | None:
+    """
+    Optionally anchor recent outputs to Sepolia by calling src/anchor_outputs.py.
+    Returns a dict with stdout on success; returns None if not requested.
+    """
+    if not allow_anchor:
+        return None
+
+    # Avoid partial failures and keep reviewer UX crisp.
+    rpc = os.getenv("SEPOLIA_RPC_URL")
+    key = os.getenv("PRIVATE_KEY") or os.getenv("SEPOLIA_PRIVATE_KEY")
+    if not rpc or not key:
+        print("NOTE: Skipping on-chain output anchoring (missing SEPOLIA_RPC_URL and/or PRIVATE_KEY in .env).")
+        return {"anchored": False, "reason": "missing_env"}
+
+    print("Anchoring output log batch on Sepolia (Merkle root)...")
+    proc = subprocess.run(
+        [sys.executable, "src/anchor_outputs.py"],
+        capture_output=True,
+        text=True,
+        cwd=str(SCRIPT_DIR),
+    )
+    if proc.returncode != 0:
+        print("ERROR: Output anchoring failed.")
+        if proc.stdout:
+            print(proc.stdout.strip())
+        if proc.stderr:
+            print(proc.stderr.strip())
+        return {"anchored": False, "reason": "anchor_failed", "stdout": proc.stdout, "stderr": proc.stderr}
+    if proc.stdout:
+        print(proc.stdout.strip())
+    return {"anchored": True, "stdout": proc.stdout, "stderr": proc.stderr}
 
 
 # ── single-mode run ────────────────────────────────────────────────────
@@ -284,6 +340,10 @@ def main():
         "--offline", action="store_true",
         help="Force offline mode (prevents Hugging Face network calls; requires cached model for semantic modes)",
     )
+    parser.add_argument(
+        "--anchor-outputs", action="store_true",
+        help="Anchor the output log batch on Sepolia (Merkle root). Requires .env with SEPOLIA_RPC_URL and PRIVATE_KEY.",
+    )
     args = parser.parse_args()
 
     if not args.all_modes and args.mode is None:
@@ -314,6 +374,10 @@ def main():
     print_header(str(input_path), len(text), text_hash)
     print_bundle_info(bundle_info)
 
+    # Track how many output log entries exist before this run (so we can report the delta).
+    log_file = SCRIPT_DIR / "logs" / "output_log.jsonl"
+    before_lines = log_file.read_text(encoding="utf-8").splitlines() if log_file.exists() else []
+
     # ── run modes ──
     modes_to_run = list(MODES) if args.all_modes else [args.mode]
     results = []
@@ -325,9 +389,19 @@ def main():
 
     # ── merkle root (after runs, so log entries exist) ──
     merkle_info = compute_merkle_root()
+    after_lines = log_file.read_text(encoding="utf-8").splitlines() if log_file.exists() else []
+    delta_lines = after_lines[len(before_lines):] if len(after_lines) >= len(before_lines) else []
+    merkle_delta = compute_merkle_root_for_lines(delta_lines)
     print_merkle_info(merkle_info)
+    if merkle_delta is not None:
+        print("── This Run Only (Delta) ─────────────────────────────────")
+        print(f"  New log entries: {merkle_delta['log_entries']}")
+        print(f"  Merkle root:     {merkle_delta['merkle_root']}")
+        print()
 
     print_footer()
+
+    anchor_result = maybe_anchor_outputs(args.anchor_outputs)
 
     # ── JSON report ──
     if args.output_json:
@@ -340,6 +414,8 @@ def main():
             "directive_bundle": bundle_info,
             "results": results,
             "merkle": merkle_info,
+            "merkle_delta": merkle_delta,
+            "anchor_outputs": anchor_result,
         }
         out_path = Path(args.output_json)
         out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False))

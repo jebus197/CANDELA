@@ -60,6 +60,16 @@ downloaded (cached) on your machine. If not, either run once with internet acces
 
   python3 run_guardian.py --input path/to/file.pdf --all-modes --output-json report.json
 
+6) (Optional) Anchor the outputs on-chain (Merkle root)
+
+By default, CANDELA logs checked outputs locally to `./logs/output_log.jsonl`.
+
+If you have Sepolia credentials in a local `.env` file, you can anchor a Merkle root
+of the new log entries on Sepolia (so you can later prove a specific output was checked
+without putting the whole text on-chain).
+
+  python3 run_guardian.py --input path/to/file.pdf --all-modes --anchor-outputs
+
 Notes
 
 - The Guardian writes local runtime logs under ./logs/.

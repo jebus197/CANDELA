@@ -65,6 +65,10 @@ def _log_output(text: str, res: dict):
     LOG_DIR.mkdir(exist_ok=True)
     entry = {
         "ts": time.time(),
+        "mode": MODE,
+        "semantic_enabled": bool(SEM_ENABLED),
+        "semantic_threshold": THRESHOLD if SEM_ENABLED else None,
+        "latency_budget_ms": BUDGET_MS,
         "directive_hash": DIRECTIVES_HASH,
         "text_sha256": _sha(text),
         "text": text,
