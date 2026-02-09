@@ -41,3 +41,10 @@ They exist to:
 - The current default ruleset is intentionally small and enterprise-looking: it focuses on high-signal safety, security, and privacy checks.
 - The framework is designed so organisations can evolve the ruleset and re-anchor the new hash without changing the Guardian runtime.
 
+## Optional packs (demo-only)
+CANDELA also ships optional ruleset packs under `rulesets/` to demonstrate extensibility.
+
+- They are opt-in (so the first run stays simple).
+- They are machine-checkable by the same validator (`src/directive_validation.py`).
+- If you use a pack and want on-chain provenance for that exact pack snapshot, you can anchor it with:
+  - `python3 src/anchor_hash.py --path rulesets/<pack>.json`

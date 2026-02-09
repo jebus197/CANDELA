@@ -94,3 +94,4 @@ Goals:
 
 ## Last update log
 - 2026‑02‑03: Created by Codex; added delegation map and anchoring steps.
+- 2026‑02‑09: Added reviewer-first demo UX (`scripts/candela_demo.py`) and a micro-directives optional pack (`rulesets/health_privacy_micro.json`). Updated docs to point reviewers to a single fast demo path and documented optional packs consistently.

@@ -61,6 +61,8 @@ def _resolve_ruleset_arg(arg: str | None) -> Path:
         return (SCRIPT_DIR / "rulesets" / "security_hardening.json").resolve()
     if low in ("privacy", "privacy_strict"):
         return (SCRIPT_DIR / "rulesets" / "privacy_strict.json").resolve()
+    if low in ("health", "health_privacy", "health_privacy_micro"):
+        return (SCRIPT_DIR / "rulesets" / "health_privacy_micro.json").resolve()
 
     p = Path(a).expanduser()
     if not p.is_absolute():

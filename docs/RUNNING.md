@@ -58,12 +58,14 @@ Default ruleset (no flag needed):
 Optional packs (only if you want to explore):
 - `security_hardening` -> `rulesets/security_hardening.json`
 - `privacy_strict` -> `rulesets/privacy_strict.json`
+- `health_privacy_micro` -> `rulesets/health_privacy_micro.json` (micro-directives demo)
 
 Examples:
 
 ```bash
 python3 run_guardian.py --input path/to/file.pdf --mode strict --ruleset security_hardening
 python3 run_guardian.py --input path/to/file.pdf --mode strict --ruleset privacy_strict
+python3 run_guardian.py --input path/to/file.pdf --mode strict --ruleset health_privacy_micro
 ```
 
 PoC note: optional packs are intentionally opt-in so reviewers are not forced into a multiple-choice setup step before the demo works.
@@ -110,3 +112,10 @@ python3 src/anchor_outputs.py
 If you want to see CANDELA monitoring generated model output in real time, use:
 - `docs/MODEL_INTEGRATION.md`
 
+## 8) Fastest reviewer path (recommended)
+
+If you want a "60 seconds to proof" flow (interactive, sensible defaults):
+
+```bash
+python3 scripts/candela_demo.py
+```

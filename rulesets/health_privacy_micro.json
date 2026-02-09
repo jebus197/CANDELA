@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "name": "CANDELA Optional Demo Ruleset",
+    "pack": "health_privacy_micro",
+    "version": "HPM-0.1",
+    "status": "demo_only",
+    "notes": [
+      "This pack demonstrates micro-directives: a complex policy goal decomposed into small, testable checks.",
+      "It is non-canonical context for reviewers. The canonical baseline ruleset remains src/directives_schema.json.",
+      "All directives in this pack are machine-checkable by src/directive_validation.py."
+    ],
+    "macro_goals": [
+      "Prevent accidental disclosure of personal data (PII) in outputs by default.",
+      "If a user supplies PII, do not repeat it back; redact or generalise.",
+      "Prefer anonymised placeholders and minimal necessary specificity."
+    ]
+  },
+  "directives": [
+    {
+      "id": 2001,
+      "title": "Health privacy: forbid UK National Insurance numbers in output",
+      "category": "privacy_health",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              {
+                "name": "UK National Insurance number",
+                "regex": "\\\\b(?!BG|GB|NK|KN|TN|NT|ZZ)[A-CEGHJ-PR-TW-Z]{2}\\\\d{6}[A-D]\\\\b",
+                "flags": "i"
+              }
+            ]
+          }
+        ]
+      },
+      "micro_of": "No PII by default"
+    },
+    {
+      "id": 2002,
+      "title": "Health privacy: forbid email addresses in output",
+      "category": "privacy_health",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              {
+                "name": "Email address",
+                "regex": "\\\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\\\.[A-Z]{2,}\\\\b",
+                "flags": "i"
+              }
+            ]
+          }
+        ]
+      },
+      "micro_of": "No PII by default"
+    },
+    {
+      "id": 2003,
+      "title": "Health privacy: forbid UK phone numbers (rough heuristic) in output",
+      "category": "privacy_health",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              {
+                "name": "UK mobile number",
+                "regex": "(?:\\\\+?44\\\\s?7\\\\d{3}|07\\\\d{3})\\\\s?\\\\d{3}\\\\s?\\\\d{3}",
+                "flags": "i"
+              },
+              {
+                "name": "UK landline (rough)",
+                "regex": "\\\\b0\\\\d{2,4}\\\\s?\\\\d{3,4}\\\\s?\\\\d{3,4}\\\\b",
+                "flags": "m"
+              }
+            ]
+          }
+        ]
+      },
+      "micro_of": "No PII by default"
+    },
+    {
+      "id": 2004,
+      "title": "Health privacy: forbid likely payment card numbers (Luhn-positive)",
+      "category": "privacy_health",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "luhn_card_forbid"
+          }
+        ]
+      },
+      "micro_of": "No sensitive identifiers"
+    },
+    {
+      "id": 2005,
+      "title": "Health privacy: block requests for personal medical record disclosure (semantic intent)",
+      "category": "privacy_health",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "semantic_forbid",
+            "threshold": 0.80,
+            "phrases": [
+              "show me a patient's medical record",
+              "provide a diagnosis for this named patient",
+              "give me identifiable patient information",
+              "reveal private health information about a person"
+            ]
+          }
+        ]
+      },
+      "micro_of": "No personal record disclosure"
+    },
+    {
+      "id": 2006,
+      "title": "Health privacy: encourage anonymised placeholders (advisory)",
+      "category": "privacy_health",
+      "validation_tier": "WARN",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "max_words",
+            "n": 400
+          }
+        ]
+      },
+      "micro_of": "Prefer minimal necessary detail",
+      "notes": "WARN-tier here is a demo proxy for 'keep it brief'. Placeholder usage is guidance; hard-enforcement would require more NLP."
+    }
+  ]
+}
+
