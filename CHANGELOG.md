@@ -22,5 +22,14 @@ All notable changes to this project are documented here.
 - Duplicate semantic detector files removed (MiniLM / `all-MiniLM-L6-v2`).
 
 ## [Unreleased]
+### Added
+- Reviewer checklist and verification flow: `docs/REVIEWER_CHECKLIST.md` and `scripts/candela_demo.py`.
+- End-to-end CLI runner: `run_guardian.py` (modes, JSON report output).
+- Optional demo ruleset packs under `rulesets/` plus `--ruleset` selection.
+- Output provenance tooling: `src/verify_output.py`, `src/latency_stats.py`, Merkle batching/anchoring via `src/anchor_outputs.py`.
+
+### Changed
+- Output anchoring CLI hardened: `src/anchor_outputs.py` supports `--dry-run` and safe `--help` (no surprise network calls).
+
 ### Planned
-- Service/API hardening, proof/verify helper CLI, CI/CD and pilot readiness.
+- Service/API hardening, CI/CD, and pilot readiness.

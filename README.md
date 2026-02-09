@@ -4,6 +4,7 @@
 
 * **How to Run (Primary Guide):** [docs/RUNNING.md](docs/RUNNING.md)
 * **Fast Reviewer Demo (Recommended):** `python3 scripts/candela_demo.py`
+* **Reviewer Checklist (5 min verification):** [docs/REVIEWER_CHECKLIST.md](docs/REVIEWER_CHECKLIST.md)
 * **OSF DOI:** [10.17605/OSF.IO/3S7BT](https://doi.org/10.17605/OSF.IO/3S7BT)
 
 ---

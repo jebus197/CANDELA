@@ -107,6 +107,12 @@ To anchor new output log entries after running a check:
 python3 src/anchor_outputs.py
 ```
 
+To compute the Merkle root *without* sending any transaction (reviewer-safe dry run):
+
+```bash
+python3 src/anchor_outputs.py --dry-run
+```
+
 ## 7) Optional: model integration demo (active monitoring)
 
 If you want to see CANDELA monitoring generated model output in real time, use:
