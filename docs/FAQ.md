@@ -139,4 +139,4 @@ We welcome feedback and collaboration as we develop CANDELA further!
 ---
 
 *CANDELA – Illuminating AI governance through verifiable directives.*
-*Copyright (c) 2024-2025 George Jackson (CANDELA Project Lead). MIT Licensed.*
+*Copyright (c) 2024-2026 George Jackson (CANDELA Project Lead). MIT Licensed.*

@@ -92,4 +92,4 @@ The core principles are:
 We welcome contributions! See our `TECH_SPEC.md` for developer to-dos, `ROADMAP.md` for future plans, and the [Issues Tab](https://github.com/jebus197/CANDELA/issues) on GitHub. ---
 
 *CANDELA – Illuminating AI governance through verifiable directives.*
-*Copyright (c) 2024-2025 George Jackson (CANDELA Project Lead). MIT Licensed.*
+*Copyright (c) 2024-2026 George Jackson (CANDELA Project Lead). MIT Licensed.*
