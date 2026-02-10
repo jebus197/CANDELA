@@ -130,7 +130,8 @@ def _luhn_ok(digits: str) -> bool:
     return total % 10 == 0
 
 
-_CARD_CANDIDATE_RE = re.compile(r"(?:\\d[ -]?){13,19}")
+# Match digit sequences that look like a card number (13-19 digits, allowing spaces/hyphens).
+_CARD_CANDIDATE_RE = re.compile(r"(?:\d[ -]?){13,19}")
 
 
 def _find_luhn_cards(text: str) -> List[str]:

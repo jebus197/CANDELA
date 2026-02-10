@@ -58,7 +58,9 @@ def _log_latency(mode: str, dt_fast_ms: float, dt_sem_ms: float | None, cached: 
         "dt_fast_ms": round(dt_fast_ms, 3),
         "dt_sem_ms": round(dt_sem_ms, 3) if dt_sem_ms is not None else None,
     }
-    LAT_FILE.open("a", encoding="utf-8").write(json.dumps(entry) + "\n")
+    # Use a context manager to avoid file descriptor leaks under sustained runs.
+    with LAT_FILE.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
 
 def _log_output(text: str, res: dict):
     """Append the checked text + verdict to an append-only log for Merkle anchoring."""
@@ -82,7 +84,9 @@ def _log_output(text: str, res: dict):
         if len(text) > LOG_PREVIEW_CHARS:
             preview += "\n\n[...truncated...]\n"
         entry["text_preview"] = preview
-    LOG_FILE.open("a", encoding="utf-8").write(json.dumps(entry, ensure_ascii=False) + "\n")
+    # Use a context manager to avoid file descriptor leaks under sustained runs.
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 def _warm_semantic():
     global _PRELOAD_DONE

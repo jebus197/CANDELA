@@ -124,9 +124,9 @@ See `docs/ANCHORS.md` for the current anchored ruleset hash and transaction(s).
 
 ## Current Position (as of now)  
 - PoC codebase is runnable locally with tests passing.  
-- Live anchoring is the final blocker before declaring PoC complete.  
-- Once anchoring succeeds, Phase 0.4 completes and the project sits at the start of Phase 0.3 (external review).  
+- Live anchoring is supported, but optional for reviewers (a dry-run path exists).  
+- Current focus is PoC stabilisation and external review readiness (Phase 0.4).  
 
 ---
 
-**Maintainer:** @jebus197 | **Last updated:** 17 Aug 2025  
+**Maintainer:** @jebus197 | **Last updated:** 10 Feb 2026  

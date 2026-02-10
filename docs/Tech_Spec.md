@@ -186,5 +186,5 @@ The `src/directives_schema.json` file includes a `validation_criteria` field for
 ---
 
 *This Technical Specification is a living document and will be updated as the CANDELA project evolves.*
-*Last Updated: May 16, 2025*
-*Repository: [https://github.com/jebus197/CANDELA](https://github.com/jebus197/CANDELA)* *Copyright (c) 2024-2025 George Jackson (CANDELA Project Lead). MIT Licensed.*
+*Last Updated: Feb 10, 2026*
+*Repository: [https://github.com/jebus197/CANDELA](https://github.com/jebus197/CANDELA)* *Copyright (c) 2024-2026 George Jackson (CANDELA Project Lead). MIT Licensed.*

@@ -34,3 +34,23 @@ def test_warns_on_email_but_does_not_block():
     findings = validate_output("email me at test@example.com", include_semantic=False, semantic_matcher=None)
     # Directive 10 is WARN tier, so it should not be a violation.
     assert 10 not in _keys(findings)
+
+
+def test_blocks_luhn_valid_payment_card_number():
+    # Known test number (Luhn-valid). This should be blocked by Directive 2.
+    findings = validate_output(
+        "Please charge card 4111 1111 1111 1111 for this order.",
+        include_semantic=False,
+        semantic_matcher=None,
+    )
+    assert 2 in _keys(findings)
+
+
+def test_does_not_block_luhn_invalid_card_like_number():
+    # Same shape, but not Luhn-valid, so it should not trigger Directive 2.
+    findings = validate_output(
+        "Example number 4111 1111 1111 1121 is not a real card.",
+        include_semantic=False,
+        semantic_matcher=None,
+    )
+    assert 2 not in _keys(findings)
