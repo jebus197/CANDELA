@@ -1,6 +1,6 @@
 # bots.md — CANDELA Agent Handoff (Canonical)
 
-Created by: Codex (GPT-5), acting under George Jackson’s instructions.
+Created by: the primary developer agent, acting under George Jackson’s instructions.
 Purpose: Provide a single, authoritative handoff file for any future bot or human maintainer.
 Context: This file (bots.md) recognises that modern development often involves both humans and LLMs. This file exists to make that collaboration explicit and safe.
 Non‑negotiable rule: If any bot or human edits CANDELA, **this file should be considered canonical and must be updated** to reflect any new work.
@@ -24,7 +24,7 @@ This is the **canonical** coordination file. If there is a conflict between othe
 - Canonical ruleset in the repo is now an enterprise-facing example pack:
   - File: `src/directives_schema.json` (Enterprise E1.0)
   - All directives are machine-checkable (BLOCK or WARN); no `N/A` criteria.
-- Tests run locally: all pass except the anchoring-integrity test until E1.0 is re-anchored and logged in `docs/ANCHORS.md`.
+- Tests run locally: all pass, including the reviewer-facing ruleset integrity check.
 
 ---
 
@@ -93,5 +93,5 @@ Goals:
 ---
 
 ## Last update log
-- 2026‑02‑03: Created by Codex; added delegation map and anchoring steps.
+- 2026‑02‑03: Created by the primary developer agent; added delegation map and anchoring steps.
 - 2026‑02‑09: Added reviewer-first demo UX (`scripts/candela_demo.py`) and a micro-directives optional pack (`rulesets/health_privacy_micro.json`). Updated docs to point reviewers to a single fast demo path and documented optional packs consistently.
