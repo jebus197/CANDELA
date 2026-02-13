@@ -1,0 +1,2 @@
+This text contains the word CANARY which should be blocked.
+2026-02-11T10:30 timestamp present.

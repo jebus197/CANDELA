@@ -1,0 +1,2 @@
+CANDELA is a model-agnostic governance framework that validates AI model outputs against a machine-checkable directive ruleset. It logs all results to an append-only audit trail and optionally anchors Merkle roots on the Ethereum Sepolia testnet. This approach provides transparency, auditability, and tamper-evidence for AI deployments.
+Confidence: High

@@ -1,0 +1,2 @@
+This is a deliberately long text that exceeds the fifty word limit set by our custom directive number nine thousand and three. We are adding many words here to ensure that the max_words check triggers correctly and produces a BLOCK verdict as expected by the test suite validation framework. That should be more than enough words now.
+2026-02-11T10:30 timestamp present.

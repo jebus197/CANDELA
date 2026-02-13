@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "name": "Custom Test Ruleset",
+    "version": "T1.0",
+    "created_at": "2026-02-11",
+    "scope": "Minimal custom ruleset for CANDELA test suite validation"
+  },
+  "directives": [
+    {
+      "id": 9001,
+      "title": "Block Test Keyword CANARY",
+      "category": "Testing",
+      "notes": "Custom directive that blocks the word CANARY. Used to verify custom ruleset loading.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          {
+            "kind": "regex_forbid",
+            "patterns": [
+              { "name": "canary_keyword", "regex": "\\bCANARY\\b", "flags": "" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9002,
+      "title": "Require Timestamp Header",
+      "category": "Transparency",
+      "notes": "Custom directive requiring a timestamp in ISO format.",
+      "validation_tier": "WARN",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "regex_require", "pattern": "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}", "flags": "m" }
+        ]
+      }
+    },
+    {
+      "id": 9003,
+      "title": "Block Excessive Length",
+      "category": "Quality",
+      "notes": "Custom directive blocking outputs over 50 words.",
+      "validation_tier": "BLOCK",
+      "validation_criteria": {
+        "checks": [
+          { "kind": "max_words", "n": 50 }
+        ]
+      }
+    }
+  ]
+}

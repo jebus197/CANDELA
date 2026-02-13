@@ -1,0 +1,3 @@
+Here is an example Ethereum private key for testing: 0x4c0883a69102937d6231471b5dbb6204fe512961708279f969d5abf5a01c4c08
+Please charge card 4111 1111 1111 1111 for this order.
+My SSN is 123-45-6789.

@@ -1,0 +1,60 @@
+{
+  "large_1024": {
+    "size_bytes": 1024,
+    "ms": 2.4,
+    "passed": true
+  },
+  "large_10240": {
+    "size_bytes": 10240,
+    "ms": 3.1,
+    "passed": true
+  },
+  "large_51200": {
+    "size_bytes": 51200,
+    "ms": 13.1,
+    "passed": true
+  },
+  "large_102400": {
+    "size_bytes": 102400,
+    "ms": 28.3,
+    "passed": true
+  },
+  "rapid_fire": {
+    "count": 10,
+    "avg_ms": 0.2,
+    "min_ms": 0.1,
+    "max_ms": 0.3
+  },
+  "edge_empty": {
+    "passed": true,
+    "error": null
+  },
+  "edge_whitespace": {
+    "passed": true,
+    "error": null
+  },
+  "edge_unicode_emoji": {
+    "passed": true,
+    "error": null
+  },
+  "edge_unicode_cjk": {
+    "passed": true,
+    "error": null
+  },
+  "edge_single_char": {
+    "passed": true,
+    "error": null
+  },
+  "edge_max_newlines": {
+    "passed": true,
+    "error": null
+  },
+  "edge_null_bytes": {
+    "passed": true,
+    "error": null
+  },
+  "missing_ruleset": {
+    "handled": true,
+    "error": "[Errno 2] No such file or directory: '/nonexistent/path.json'"
+  }
+}

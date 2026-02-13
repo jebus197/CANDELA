@@ -1,0 +1,44 @@
+{
+  "input": "/Users/georgejackson/Developer_Projects/CANDELA_SANDBOX/Candela Test Suite/test_violation_input.txt",
+  "text_length": 198,
+  "text_sha256": "7144997354ceaaf9df3aac502bff05e559adc76b2edf8cee118bb7e18532bc67",
+  "extraction_ms": 0.05,
+  "offline": true,
+  "directive_bundle": {
+    "ruleset_path": "/Users/georgejackson/Developer_Projects/CANDELA_SANDBOX/src/directives_schema.json",
+    "directive_bundle_hash": "bddd2587745d1d86a4d14cf006025386a218e4550642ca236ca6b682125e3f6a",
+    "directive_count": 12,
+    "hash_recorded_in_docs": true
+  },
+  "results": [
+    {
+      "mode": "regex_only",
+      "passed": false,
+      "score": 100,
+      "violations": [
+        "directive_1",
+        "directive_2",
+        "directive_3"
+      ],
+      "notes": [
+        "Block Credential And Secret Material: Matched forbidden pattern: eth_private_key_hex.",
+        "Block Payment Card Numbers: Detected a likely payment card number (Luhn-positive).",
+        "Block Government Identifier Formats: Matched forbidden pattern: us_ssn_dashed.",
+        "Warn If Confidence Tag Missing: Missing required pattern."
+      ],
+      "wall_time_ms": 1.92,
+      "cpu_time_ms": 1.92,
+      "mem_rss_kb": 22896,
+      "mem_delta_kb": 0
+    }
+  ],
+  "merkle": {
+    "merkle_root": "74f5f52fc51b731d2f98db5a03ebdd2c14df2dc3bb94fe514f6752194c74dce4",
+    "log_entries": 85
+  },
+  "merkle_delta": {
+    "merkle_root": "7901e72f5a9d11f6a2052482132207da206318b16d71eeb3510c00812ca0867b",
+    "log_entries": 1
+  },
+  "anchor_outputs": null
+}

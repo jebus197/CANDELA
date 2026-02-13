@@ -1,0 +1,39 @@
+{
+  "input": "/Users/georgejackson/Developer_Projects/CANDELA_SANDBOX/Candela Test Suite/test_violation_input.txt",
+  "text_length": 198,
+  "text_sha256": "7144997354ceaaf9df3aac502bff05e559adc76b2edf8cee118bb7e18532bc67",
+  "extraction_ms": 0.12,
+  "offline": false,
+  "directive_bundle": {
+    "ruleset_path": "/Users/georgejackson/Developer_Projects/CANDELA_SANDBOX/rulesets/health_privacy_micro.json",
+    "directive_bundle_hash": "602a228d4e5bc33233df5ae3878126df476432514d2c19aab2935a6a1a874dab",
+    "directive_count": 6,
+    "hash_recorded_in_docs": false
+  },
+  "results": [
+    {
+      "mode": "regex_only",
+      "passed": false,
+      "score": 100,
+      "violations": [
+        "directive_2004"
+      ],
+      "notes": [
+        "Health privacy: forbid likely payment card numbers (Luhn-positive): Detected a likely payment card number (Luhn-positive)."
+      ],
+      "wall_time_ms": 1.41,
+      "cpu_time_ms": 1.33,
+      "mem_rss_kb": 19440,
+      "mem_delta_kb": 0
+    }
+  ],
+  "merkle": {
+    "merkle_root": "a8a5191b3eba07be7d3b4f4c3b6260e4fb2776364a19f0aa162a071bf73831d6",
+    "log_entries": 13
+  },
+  "merkle_delta": {
+    "merkle_root": "6d5879387b5b6d5da945c42a375ccf554458f2100e4f850d62350ac6517cf271",
+    "log_entries": 1
+  },
+  "anchor_outputs": null
+}
