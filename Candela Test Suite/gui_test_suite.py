@@ -1273,101 +1273,202 @@ class CandelaWizard(tk.Tk):
         ).start()
 
     def _do_preparation(self):
+        """
+        Smart preparation: silently checks what's already installed,
+        only downloads/installs what's missing, with friendly progress.
+        """
         model = self.selected_model
         if not model:
             self.after(0, lambda: self._show_step(6))
             return
 
-        # Step 1: Check if model needs downloading
-        if model["local"]:
-            self.after(0, lambda: self._prep_ui(
-                30, "Checking model files…",
-                f"Found {model['name']} on your computer.",
-            ))
-            time.sleep(0.5)
-        else:
-            # Download model
-            self.after(0, lambda: self._prep_ui(
-                5, f"Downloading {model['name']}…",
-                f"This may take a few minutes depending on your connection.\n"
-                f"Download size: ~{model['size_gb']} GB",
-            ))
+        # ── Phase A: Check what we already have ──────────────────────
+        self.after(0, lambda: self._prep_ui(
+            2, "Checking what's already set up…",
+            "Looking at what's on your computer.",
+        ))
 
-            # Use huggingface_hub to download
-            try:
-                from huggingface_hub import snapshot_download
-                target_dir = CANDELA_MODELS / model["model_id"].split("/")[-1]
+        # Check which Python packages are present
+        def _has_pkg(name):
+            r = subprocess.run(
+                [sys.executable, "-c", f"import {name}"],
+                capture_output=True, timeout=10,
+            )
+            return r.returncode == 0
 
-                # Download with progress polling
-                download_done = threading.Event()
-                download_error = [None]
+        has_pytest = _has_pkg("pytest")
+        has_torch = _has_pkg("torch")
+        has_transformers = _has_pkg("transformers")
+        has_hf_hub = _has_pkg("huggingface_hub")
+        model_is_local = model["local"]
 
-                def _download():
-                    try:
-                        snapshot_download(
-                            model["model_id"],
-                            local_dir=str(target_dir),
-                            local_dir_use_symlinks=False,
-                        )
-                    except Exception as ex:
-                        download_error[0] = str(ex)
-                    download_done.set()
-
-                dl_thread = threading.Thread(target=_download, daemon=True)
-                dl_thread.start()
-
-                # Simulate progress while downloading
-                pct = 5
-                while not download_done.is_set():
-                    if self.run_cancelled:
-                        return
-                    time.sleep(1)
-                    pct = min(pct + 2, 60)
-                    self.after(0, lambda p=pct: self._prep_ui(
-                        p, f"Downloading {model['name']}… {p}%", None,
-                    ))
-
-                if download_error[0]:
-                    self.after(0, lambda: self._prep_ui(
-                        0,
-                        "Download failed",
-                        f"Could not download the model: {download_error[0]}\n"
-                        "Check your internet connection and try again.",
-                    ))
-                    return
-
-                # Update model path
-                model["path"] = str(target_dir)
-                model["local"] = True
-                model["source"] = "Ready to use (just downloaded)"
-
-            except ImportError:
-                self.after(0, lambda: self._prep_ui(
-                    0,
-                    "Missing download tool",
-                    "The huggingface_hub package is needed to download models.\n"
-                    "Install it with: pip install huggingface_hub",
-                ))
-                return
+        # Build a list of things we need to do
+        tasks = []
+        if not has_pytest:
+            tasks.append(("pytest", "pip", "pytest"))
+        if not has_torch:
+            tasks.append(("torch", "pip", "torch"))
+        if not has_transformers:
+            tasks.append(("transformers", "pip", "transformers"))
+        if not has_hf_hub and not model_is_local:
+            tasks.append(("huggingface_hub", "pip", "huggingface-hub"))
+        if not model_is_local:
+            tasks.append(("model", "download", model["name"]))
 
         if self.run_cancelled:
             return
 
-        # Step 2: Check dependencies
-        self.after(0, lambda: self._prep_ui(
-            70, "Checking test dependencies…",
-            "Making sure everything needed is in place.",
-        ))
-        time.sleep(0.3)
+        # ── Phase B: Nothing to do? Skip ahead ──────────────────────
+        if not tasks:
+            self.after(0, lambda: self._prep_ui(
+                50, f"Found {model['name']} on your computer",
+                "Everything needed is already installed. No downloads required.",
+            ))
+            time.sleep(0.6)
+        else:
+            # ── Phase C: Tell the user what's happening ──────────────
+            pkg_tasks = [t for t in tasks if t[1] == "pip"]
+            dl_task = [t for t in tasks if t[1] == "download"]
 
-        # Step 3: Configure (symlink or copy model for CANDELA if needed)
+            parts = []
+            if dl_task:
+                parts.append(f"download {model['name']}")
+            if pkg_tasks:
+                parts.append("install a few supporting tools")
+
+            summary = " and ".join(parts)
+            self.after(0, lambda: self._prep_ui(
+                5,
+                f"Setting things up…",
+                f"We need to {summary}.\n"
+                "This only needs to happen once — next time it will be instant.",
+            ))
+            time.sleep(0.5)
+
+            # Work out progress steps
+            total_steps = len(tasks) + 1  # +1 for configure
+            done_steps = 0
+
+            # ── Phase D: Install missing Python packages ─────────────
+            for pkg_name, task_type, pip_name in tasks:
+                if self.run_cancelled:
+                    return
+                if task_type != "pip":
+                    continue
+
+                done_steps += 1
+                pct = int((done_steps / total_steps) * 80)
+
+                self.after(0, lambda p=pct, n=pip_name: self._prep_ui(
+                    p, f"Installing {n}…",
+                    "This only needs to happen once.",
+                ))
+
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "--quiet", pip_name],
+                    capture_output=True, text=True, timeout=600,
+                )
+                if result.returncode != 0:
+                    # Try --user fallback
+                    result = subprocess.run(
+                        [sys.executable, "-m", "pip", "install", "--quiet",
+                         "--user", pip_name],
+                        capture_output=True, text=True, timeout=600,
+                    )
+                if result.returncode != 0:
+                    self.after(0, lambda n=pip_name, e=result.stderr: self._prep_ui(
+                        0,
+                        f"Could not install {n}",
+                        f"Something went wrong. You may need to install it "
+                        f"manually by typing this in Terminal:\n"
+                        f"  pip install {n}\n\n"
+                        f"Then try running the test suite again.",
+                    ))
+                    return
+
+            if self.run_cancelled:
+                return
+
+            # ── Phase E: Download model if needed ────────────────────
+            if dl_task:
+                done_steps += 1
+                self.after(0, lambda: self._prep_ui(
+                    int((done_steps / total_steps) * 80),
+                    f"Downloading {model['name']}…",
+                    f"This may take a few minutes (~{model['size_gb']} GB).\n"
+                    "The model will be saved on your computer for future use.",
+                ))
+
+                try:
+                    from huggingface_hub import snapshot_download
+                    target_dir = CANDELA_MODELS / model["model_id"].split("/")[-1]
+
+                    download_done = threading.Event()
+                    download_error = [None]
+
+                    def _download():
+                        try:
+                            snapshot_download(
+                                model["model_id"],
+                                local_dir=str(target_dir),
+                                local_dir_use_symlinks=False,
+                            )
+                        except Exception as ex:
+                            download_error[0] = str(ex)
+                        download_done.set()
+
+                    dl_thread = threading.Thread(target=_download, daemon=True)
+                    dl_thread.start()
+
+                    base_pct = int((done_steps / total_steps) * 80)
+                    dl_pct = base_pct
+                    while not download_done.is_set():
+                        if self.run_cancelled:
+                            return
+                        time.sleep(1)
+                        dl_pct = min(dl_pct + 1, base_pct + 15)
+                        self.after(0, lambda p=dl_pct: self._prep_ui(
+                            p, f"Downloading {model['name']}…", None,
+                        ))
+
+                    if download_error[0]:
+                        self.after(0, lambda: self._prep_ui(
+                            0,
+                            "Download failed",
+                            f"Could not download the model.\n\n"
+                            "Check your internet connection and try again.\n"
+                            "If the problem persists, try selecting a different "
+                            "model on the previous screen.",
+                        ))
+                        return
+
+                    model["path"] = str(target_dir)
+                    model["local"] = True
+                    model["source"] = "Ready to use (just downloaded)"
+
+                except ImportError:
+                    self.after(0, lambda: self._prep_ui(
+                        0,
+                        "Setup incomplete",
+                        "A download tool could not be installed.\n"
+                        "Please check your internet connection and try again.",
+                    ))
+                    return
+
+        if self.run_cancelled:
+            return
+
+        # ── Phase F: Configure model for CANDELA ─────────────────────
         self.after(0, lambda: self._prep_ui(
-            85, "Configuring model for CANDELA…",
-            "Setting up the model so CANDELA can use it during the test.",
+            85, "Configuring for the test…",
+            "Connecting the model to CANDELA. Your existing files won't be changed.",
         ))
 
-        # Ensure model is accessible from CANDELA's expected path
-        model_name = model["model_id"].split("/")[-1] if "/" in model["model_id"] else model["model_id"]
+        model_name = (
+            model["model_id"].split("/")[-1]
+            if "/" in model["model_id"]
+            else model["model_id"]
+        )
         candela_model_path = CANDELA_MODELS / model_name
         if not candela_model_path.exists() and model["local"]:
             src = Path(model["path"])
@@ -1375,14 +1476,14 @@ class CandelaWizard(tk.Tk):
                 try:
                     candela_model_path.symlink_to(src)
                 except Exception:
-                    pass  # not critical — model may already be in the right place
+                    pass
 
         time.sleep(0.3)
 
-        # Done
+        # ── Done ─────────────────────────────────────────────────────
         self.after(0, lambda: self._prep_ui(
             100, "Ready!",
-            f"{model['name']} is configured. Starting tests…",
+            f"Everything is set up. Starting tests…",
         ))
         time.sleep(0.8)
 
