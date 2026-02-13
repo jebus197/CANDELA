@@ -474,6 +474,8 @@ class CandelaWizard(tk.Tk):
         self.run_cancelled = False
         self.run_results: dict = {}
         self.model_process: subprocess.Popen | None = None
+        self._model_ready = False
+        self._bg_tests_done = False
 
         # ── Fonts ──
         self.f_title   = tkfont.Font(family="Helvetica", size=16, weight="bold")
@@ -661,7 +663,9 @@ class CandelaWizard(tk.Tk):
         elif idx == 6:
             self._start_run()
         elif idx == 7:
-            # Give keyboard focus to chat input so typing works immediately
+            # Start model process, run tests in background, focus chat input
+            self._start_model_process()
+            self._start_background_tests()
             self.after(100, lambda: self.chat_input.focus_set())
         elif idx == 8:
             pass  # results shown by caller
@@ -1238,9 +1242,10 @@ class CandelaWizard(tk.Tk):
             ok = messagebox.askyesno(
                 "Ready to launch",
                 f"This will launch {model_name} with CANDELA's safety "
-                f"layer active, then run the full test suite against it.\n\n"
-                f"CANDELA will check every response the model produces "
-                f"and log the results.\n\n"
+                f"layer active.\n\n"
+                f"You'll be able to chat with the model and see CANDELA "
+                f"check every response in real time, while the automated "
+                f"tests run in the background.\n\n"
                 f"Start now?",
             )
             if not ok:
@@ -1265,9 +1270,8 @@ class CandelaWizard(tk.Tk):
         )
         self.prep_status.pack(anchor="w", pady=(0, 12))
 
-        # Progress bar
+        # Progress bar (keep clam theme — do NOT switch to default, it breaks trackpad)
         style = ttk.Style()
-        style.theme_use("default")
         style.configure(
             "Prep.Horizontal.TProgressbar",
             troughcolor=PROGRESS_TRACK, background=ACCENT, thickness=18,
@@ -1527,14 +1531,22 @@ class CandelaWizard(tk.Tk):
         time.sleep(0.3)
 
         # ── Done ─────────────────────────────────────────────────────
-        self.after(0, lambda: self._prep_ui(
-            100, "Ready!",
-            f"Everything is set up. Starting tests…",
-        ))
-        time.sleep(0.8)
-
-        if not self.run_cancelled:
-            self.after(0, lambda: self._show_step(6))
+        if self.selected_profile == "quick":
+            self.after(0, lambda: self._prep_ui(
+                100, "Ready!",
+                f"Everything is set up. Starting tests…",
+            ))
+            time.sleep(0.8)
+            if not self.run_cancelled:
+                self.after(0, lambda: self._show_step(6))
+        else:
+            self.after(0, lambda: self._prep_ui(
+                100, "Ready!",
+                f"Everything is set up. Launching the model…",
+            ))
+            time.sleep(0.8)
+            if not self.run_cancelled:
+                self.after(0, lambda: self._show_step(7))
 
     def _prep_ui(self, pct, status, detail):
         self.prep_progress.set(pct)
@@ -1732,14 +1744,12 @@ class CandelaWizard(tk.Tk):
 
         report = str(RESULTS_DIR / "Candela Test Suite Results.md")
 
-        # If full/anchor profile, always offer interactive session
-        # (the model loaded even if some non-model phases had issues)
-        if self.selected_profile != "quick":
-            self.after(800, lambda: self._show_step(7))
-        else:
-            self.after(800, lambda: self._show_final_results(
-                self.run_returncode == 0, report,
-            ))
+        self._bg_tests_done = True
+
+        # Quick profile: Running step goes straight to results
+        self.after(800, lambda: self._show_final_results(
+            self.run_returncode == 0, report,
+        ))
 
     def _update_run_ui(self, pct, phase):
         self.run_progress.set(pct)
@@ -1771,15 +1781,22 @@ class CandelaWizard(tk.Tk):
 
         self.interact_status = tk.Label(
             body,
-            text="The automated tests are done — now you can try it yourself.\n\n"
-                 "The AI model is running with CANDELA watching every response. "
-                 "Type anything below and see CANDELA check it in real time. "
-                 "Try asking for something sensitive — like a password or credit "
-                 "card number — and watch CANDELA catch it.",
+            text="The AI model is loading with CANDELA watching every response.\n\n"
+                 "Once loaded, type anything below and see CANDELA check it in "
+                 "real time. Try asking for something sensitive — like a password "
+                 "or credit card number — and watch CANDELA catch it.\n\n"
+                 "The automated tests are running in the background.",
             font=self.f_small, bg=WHITE, fg=TEXT_LIGHT,
             wraplength=430, justify="left",
         )
-        self.interact_status.pack(anchor="w", pady=(0, 10))
+        self.interact_status.pack(anchor="w", pady=(0, 4))
+
+        # Background test progress indicator
+        self.interact_test_status = tk.Label(
+            body, text="",
+            font=self.f_badge, bg=WHITE, fg=ACCENT,
+        )
+        self.interact_test_status.pack(anchor="w", pady=(0, 6))
 
         # Chat-style display
         chat_frame = tk.Frame(
@@ -1828,10 +1845,14 @@ class CandelaWizard(tk.Tk):
         bottom = tk.Frame(parent, bg=WHITE)
         bottom.pack(fill="x", side="bottom", padx=24, pady=(0, 14))
 
+        def _back_from_interact():
+            self._stop_model_process()
+            self._show_step(6)
+
         ttk.Button(
             bottom, text="Back", style="Nav.TButton",
             cursor="hand2",
-            command=lambda: self._show_step(6),
+            command=_back_from_interact,
         ).pack(side="left")
 
         self.interact_candela_status = tk.Label(
@@ -1852,92 +1873,277 @@ class CandelaWizard(tk.Tk):
         self.chat_display.configure(state="disabled")
         self.chat_display.see("end")
 
+    # ── Background test runner (runs while user interacts) ─────────
+    def _start_background_tests(self):
+        """Start the automated test suite in the background."""
+        if getattr(self, "_bg_tests_done", False):
+            return  # already ran
+        self._bg_tests_done = False
+        self.run_started_at = time.time()
+        self.run_returncode = 1  # assume fail until proven otherwise
+        self.interact_test_status.config(text="Tests running in background…", fg=ACCENT)
+
+        def _run():
+            cmd = [
+                sys.executable,
+                str(SCRIPT_DIR / "run_test_suite.py"),
+                "--profile", self.selected_profile,
+                "--json",
+            ]
+            if self.selected_profile != "anchor":
+                cmd.append("--skip-anchor")
+            try:
+                proc = subprocess.run(
+                    cmd, capture_output=True, text=True,
+                    cwd=str(SANDBOX), timeout=600,
+                )
+                self.run_returncode = proc.returncode
+            except Exception:
+                self.run_returncode = 1
+
+            self._bg_tests_done = True
+            passed = self.run_returncode == 0
+            if passed:
+                status = "✓ All background tests passed"
+                colour = GREEN
+            else:
+                status = "⚠ Some tests had issues — see results for details"
+                colour = AMBER
+            self.after(0, lambda: self.interact_test_status.config(
+                text=status, fg=colour,
+            ))
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    # ── Persistent model subprocess ────────────────────────────────
+    def _start_model_process(self):
+        """Launch demo_model_guardian.py --interactive as a persistent subprocess."""
+        if self.model_process and self.model_process.poll() is None:
+            return  # already running
+
+        self._model_ready = False
+        self._append_chat("Loading the AI model — this may take 20-30 seconds…", "system")
+        self.chat_input.config(state="disabled")
+        self.chat_send_btn.config(state="disabled")
+
+        model_dir = "models/TinyLlama-1.1B-Chat-v1.0"
+        if self.selected_model:
+            name = self.selected_model.get("name", "")
+            candidate = SANDBOX / "models" / name
+            if candidate.exists():
+                model_dir = str(candidate)
+
+        cmd = [
+            sys.executable,
+            str(SANDBOX / "demo_model_guardian.py"),
+            "--interactive",
+            "--prompt", "hello",       # required by argparse, ignored in interactive mode
+            "--mode", "strict",
+            "--max-new-tokens", "150",
+            "--show-blocked",
+            "--model-dir", model_dir,
+        ]
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+        self.model_process = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, bufsize=0,
+            cwd=str(SANDBOX), env=env,
+        )
+        # Reader thread: watch stdout for "You> " prompt and responses
+        threading.Thread(
+            target=self._model_reader, daemon=True,
+        ).start()
+
+    def _model_reader(self):
+        """Background thread: read model subprocess stdout character by character."""
+        proc = self.model_process
+        if not proc or not proc.stdout:
+            return
+        buf = ""
+        response_lines: list[str] = []
+        try:
+            fd = proc.stdout.fileno()
+            while True:
+                chunk = os.read(fd, 4096)
+                if not chunk:
+                    break
+                buf += chunk.decode("utf-8", errors="replace")
+                # Check for "You> " prompt — model is ready for input
+                while "You>" in buf:
+                    before, _, buf = buf.partition("You>")
+                    # Strip trailing whitespace from the prompt marker
+                    buf = buf.lstrip(" ")
+                    # Process any lines that came before the prompt
+                    for ln in before.split("\n"):
+                        stripped = ln.rstrip()
+                        if stripped:
+                            response_lines.append(stripped)
+                    if not self._model_ready:
+                        self._model_ready = True
+                        self.after(0, self._on_model_ready)
+                    elif response_lines:
+                        rl = list(response_lines)
+                        response_lines.clear()
+                        self.after(0, lambda r=rl: self._show_model_response(r))
+                    else:
+                        response_lines.clear()
+        except Exception:
+            pass
+        # Process ended
+        if response_lines:
+            rl = list(response_lines)
+            self.after(0, lambda r=rl: self._show_model_response(r))
+        # If model never became ready, it crashed during loading
+        if not self._model_ready:
+            # Read stderr for clues
+            err = ""
+            try:
+                if proc.stderr:
+                    err = proc.stderr.read().decode("utf-8", errors="replace")[-300:]
+            except Exception:
+                pass
+            self.after(0, lambda e=err: self._on_model_crash(e))
+
+    def _on_model_crash(self, stderr_tail):
+        """Called when the model subprocess dies before becoming ready."""
+        self._remove_last_chat_line()
+        msg = "The model process exited before it could load."
+        if stderr_tail:
+            msg += f"\n\n{stderr_tail.strip()}"
+        self._append_chat(msg, "warning")
+        self.chat_input.config(state="normal")
+        self.chat_send_btn.config(state="disabled")
+
+    def _on_model_ready(self):
+        """Called when the model subprocess prints its first 'You> ' prompt."""
+        self._remove_last_chat_line()
+        self._append_chat("Model loaded — type a message and press Enter.", "system")
+        self.chat_input.config(state="normal")
+        self.chat_send_btn.config(state="normal")
+        self.chat_input.focus_set()
+
+    def _show_model_response(self, lines: list[str]):
+        """Parse the accumulated output lines from one model turn."""
+        self._remove_last_chat_line()  # remove "Thinking…"
+
+        # Extract model output and CANDELA verdict from the structured output
+        model_output = []
+        has_violation = False
+        in_model_output = False
+        for ln in lines:
+            if "=== Model Output ===" in ln:
+                in_model_output = True
+                continue
+            if in_model_output and ln.startswith("==="):
+                in_model_output = False
+                continue
+            if in_model_output and ln.strip():
+                model_output.append(ln)
+            if "FAIL" in ln and "mode=" in ln:
+                has_violation = True
+            if "output blocked" in ln.lower():
+                has_violation = True
+                model_output.append("(Response blocked by CANDELA)")
+
+        if model_output:
+            self._append_chat("AI: " + "\n".join(model_output), "ai")
+        else:
+            # No model output section found — show raw non-empty lines
+            content = [ln for ln in lines if ln.strip()
+                       and "Generating" not in ln
+                       and "Loading" not in ln]
+            if content:
+                self._append_chat("AI: " + "\n".join(content[:10]), "ai")
+            else:
+                self._append_chat("(No response from model)", "system")
+
+        if has_violation:
+            self._append_chat(
+                "⚠ CANDELA detected a rule violation in this response",
+                "warning",
+            )
+        else:
+            self._append_chat(
+                "✓ CANDELA: Response checked — no violations found",
+                "system",
+            )
+        self.chat_input.config(state="normal")
+        self.chat_send_btn.config(state="normal")
+        self.chat_input.focus_set()
+
     def _on_chat_send(self, event=None):
         msg = self.chat_input.get().strip()
         if not msg:
             return
+        if not self._model_ready:
+            return
+        proc = self.model_process
+        if not proc or proc.poll() is not None:
+            self._append_chat("(Model process is not running)", "system")
+            return
+
         self.chat_input.delete(0, "end")
+        self.chat_input.config(state="disabled")
+        self.chat_send_btn.config(state="disabled")
 
         self._append_chat(f"You: {msg}", "user")
         self._append_chat("Thinking…", "system")
 
-        # Send to model in background
-        threading.Thread(
-            target=self._send_to_model, args=(msg,), daemon=True,
-        ).start()
-
-    def _send_to_model(self, user_msg):
-        """
-        Send a prompt to the CANDELA-wrapped model and show the response.
-        This is a simplified demo — in production, this would use the full
-        demo_model_guardian pipeline.
-        """
+        # Write to the model's stdin
         try:
-            cmd = [
-                sys.executable,
-                str(SANDBOX / "demo_model_guardian.py"),
-                "--prompt", user_msg,
-                "--mode", "strict",
-                "--max-tokens", "150",
-            ]
-            proc = subprocess.run(
-                cmd, capture_output=True, text=True,
-                cwd=str(SANDBOX), timeout=120,
-            )
-
-            # Remove the "Thinking…" line
-            self.after(0, lambda: self._remove_last_chat_line())
-
-            if proc.returncode == 0:
-                # Parse output for model response and CANDELA verdict
-                output = proc.stdout.strip()
-                # Show model response
-                self.after(0, lambda: self._append_chat(
-                    f"AI: {output}", "ai",
-                ))
-                # Check for CANDELA flags in stderr or output
-                if "VIOLATION" in proc.stderr.upper() or "BLOCKED" in proc.stderr.upper():
-                    self.after(0, lambda: self._append_chat(
-                        "⚠ CANDELA detected a rule violation in this response",
-                        "warning",
-                    ))
-                else:
-                    self.after(0, lambda: self._append_chat(
-                        "✓ CANDELA: Response checked — no violations found",
-                        "system",
-                    ))
-            else:
-                self.after(0, lambda: self._append_chat(
-                    f"(Model returned an error. This is normal during testing.)",
-                    "system",
-                ))
-
-        except subprocess.TimeoutExpired:
-            self.after(0, lambda: self._remove_last_chat_line())
-            self.after(0, lambda: self._append_chat(
-                "(Response timed out — the model may need more time.)",
-                "system",
-            ))
+            proc.stdin.write((msg + "\n").encode("utf-8"))
+            proc.stdin.flush()
         except Exception as ex:
-            self.after(0, lambda: self._remove_last_chat_line())
-            self.after(0, lambda: self._append_chat(
-                f"(Could not reach the model: {ex})",
-                "system",
-            ))
+            self._append_chat(f"(Could not send to model: {ex})", "system")
+            self.chat_input.config(state="normal")
+            self.chat_send_btn.config(state="normal")
+
+    def _stop_model_process(self):
+        """Gracefully shut down the persistent model subprocess."""
+        proc = self.model_process
+        if proc and proc.poll() is None:
+            try:
+                proc.stdin.write(b"exit\n")
+                proc.stdin.flush()
+            except Exception:
+                pass
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+        self.model_process = None
+        self._model_ready = False
 
     def _remove_last_chat_line(self):
         self.chat_display.configure(state="normal")
-        # Remove last line (the "Thinking…" message)
         content = self.chat_display.get("1.0", "end-1c")
         lines = content.split("\n")
-        if lines and "Thinking" in lines[-1]:
+        if lines and ("Thinking" in lines[-1] or "Loading the AI" in lines[-1]):
             self.chat_display.delete(f"end-{len(lines[-1])+1}c", "end")
         self.chat_display.configure(state="disabled")
 
     def _finish_interact(self):
-        report = str(RESULTS_DIR / "Candela Test Suite Results.md")
-        passed = getattr(self, "run_returncode", 1) == 0
-        self._show_final_results(passed, report)
+        self._stop_model_process()
+        if not getattr(self, "_bg_tests_done", True):
+            # Tests still running — show a waiting message
+            self.interact_test_status.config(
+                text="Waiting for background tests to finish…", fg=ACCENT,
+            )
+            self._wait_for_tests_then_results()
+        else:
+            report = str(RESULTS_DIR / "Candela Test Suite Results.md")
+            passed = getattr(self, "run_returncode", 1) == 0
+            self._show_final_results(passed, report)
+
+    def _wait_for_tests_then_results(self):
+        """Poll until background tests finish, then show results."""
+        if getattr(self, "_bg_tests_done", True):
+            report = str(RESULTS_DIR / "Candela Test Suite Results.md")
+            passed = getattr(self, "run_returncode", 1) == 0
+            self._show_final_results(passed, report)
+        else:
+            self.after(500, self._wait_for_tests_then_results)
 
     # ══════════════════════════════════════════════════════════════════
     #  STEP 8: Results
