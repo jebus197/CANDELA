@@ -51,6 +51,17 @@ def _configure_offline_env(offline: bool) -> None:
     os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
 
+def _best_device() -> str:
+    """Pick the fastest available device: MPS (Apple Silicon GPU) > CPU."""
+    try:
+        import torch
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+    except Exception:
+        pass
+    return "cpu"
+
+
 def _load_local_text_model(model_dir: Path):
     try:
         from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -64,17 +75,22 @@ def _load_local_text_model(model_dir: Path):
             "Expected: model config + tokenizer + weights (downloaded from your chosen model host)."
         )
 
+    device = _best_device()
+    print(f"Using device: {device}")
+
     tok = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True, use_fast=True)
     mdl = AutoModelForCausalLM.from_pretrained(str(model_dir), local_files_only=True)
+    mdl.to(device)
+    mdl.eval()
     return tok, mdl
 
 
 def _generate(tok, mdl, prompt: str, max_new_tokens: int, temperature: float) -> str:
     import torch
 
+    device = str(mdl.device)
     inputs = tok(prompt, return_tensors="pt")
-    # CPU-only by default for reviewer machines.
-    mdl.to("cpu")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
         out = mdl.generate(
             **inputs,

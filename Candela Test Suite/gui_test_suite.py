@@ -1993,7 +1993,7 @@ class CandelaWizard(tk.Tk):
             "--interactive",
             "--prompt", "hello",
             "--mode", "strict",
-            "--max-new-tokens", "150",
+            "--max-new-tokens", "60",
             "--show-blocked",
             "--model-dir", model_dir,
         ]
