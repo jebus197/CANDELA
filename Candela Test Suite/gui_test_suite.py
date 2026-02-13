@@ -17,10 +17,13 @@ Requires: Python 3.11+ with tkinter
 """
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import platform
+import pty
 import re
+import select
 import shutil
 import signal
 import subprocess
@@ -57,6 +60,8 @@ GREEN      = "#27ae60"
 AMBER      = "#e67e22"
 RED        = "#e74c3c"
 CARD_BORDER = "#dcdcdc"
+TERM_BG     = "#000000"          # Terminal: black background
+TERM_FG     = "#ffffff"          # Terminal: white text
 SELECTED_BG = "#dae8fc"
 HOVER_BG   = "#f0f0f0"
 PROGRESS_TRACK = "#e0e0e0"
@@ -524,10 +529,22 @@ class CandelaWizard(tk.Tk):
     # ── Cleanup ────────────────────────────────────────────────────────
     def _on_close(self):
         self.run_cancelled = True
+        # Stop pty poller
+        poll_id = getattr(self, "_pty_poll_id", None)
+        if poll_id is not None:
+            self.after_cancel(poll_id)
+        # Kill model process
         if self.model_process:
             try:
                 self.model_process.terminate()
             except Exception:
+                pass
+        # Close pty master fd
+        fd = getattr(self, "_pty_master", None)
+        if fd is not None:
+            try:
+                os.close(fd)
+            except OSError:
                 pass
         self.destroy()
 
@@ -663,10 +680,10 @@ class CandelaWizard(tk.Tk):
         elif idx == 6:
             self._start_run()
         elif idx == 7:
-            # Start model process, run tests in background, focus chat input
+            # Start model process, run tests in background, focus terminal
             self._start_model_process()
             self._start_background_tests()
-            self.after(100, lambda: self.chat_input.focus_set())
+            self.after(100, lambda: self.term.focus_set())
         elif idx == 8:
             pass  # results shown by caller
 
@@ -1768,7 +1785,7 @@ class CandelaWizard(tk.Tk):
         self.after(1000, lambda: self._show_step(4))
 
     # ══════════════════════════════════════════════════════════════════
-    #  STEP 7: Interactive Session
+    #  STEP 7: Interactive Session  (embedded terminal)
     # ══════════════════════════════════════════════════════════════════
     def _build_interact(self, parent):
         body = tk.Frame(parent, bg=WHITE)
@@ -1777,69 +1794,52 @@ class CandelaWizard(tk.Tk):
         tk.Label(
             body, text="Try it yourself",
             font=self.f_title, bg=WHITE, fg=TEXT,
-        ).pack(anchor="w", pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 2))
 
         self.interact_status = tk.Label(
             body,
-            text="The AI model is loading with CANDELA watching every response.\n\n"
-                 "Once loaded, type anything below and see CANDELA check it in "
-                 "real time. Try asking for something sensitive — like a password "
-                 "or credit card number — and watch CANDELA catch it.\n\n"
-                 "The automated tests are running in the background.",
+            text="CANDELA is watching every response.  Try asking for "
+                 "something sensitive — a password, credit-card number, "
+                 "or private key — and watch it get caught.",
             font=self.f_small, bg=WHITE, fg=TEXT_LIGHT,
             wraplength=430, justify="left",
         )
-        self.interact_status.pack(anchor="w", pady=(0, 4))
+        self.interact_status.pack(anchor="w", pady=(0, 2))
 
         # Background test progress indicator
         self.interact_test_status = tk.Label(
             body, text="",
             font=self.f_badge, bg=WHITE, fg=ACCENT,
         )
-        self.interact_test_status.pack(anchor="w", pady=(0, 6))
+        self.interact_test_status.pack(anchor="w", pady=(0, 4))
 
-        # Chat-style display
-        chat_frame = tk.Frame(
-            body, bg=BG, relief="solid", bd=1,
-            highlightbackground=CARD_BORDER, highlightthickness=1,
+        # ── Embedded terminal (white on black, like a real CLI) ───
+        term_frame = tk.Frame(
+            body, bg=TERM_BG, relief="solid", bd=1,
+            highlightbackground="#333333", highlightthickness=1,
         )
-        chat_frame.pack(fill="both", expand=True, pady=(0, 8))
+        term_frame.pack(fill="both", expand=True, pady=(0, 8))
 
-        self.chat_display = tk.Text(
-            chat_frame, font=self.f_body, bg=BG, fg=TEXT,
-            wrap="word", state="disabled", relief="flat",
-            padx=10, pady=8,
+        self.term = tk.Text(
+            term_frame,
+            font=tkfont.Font(family="Menlo", size=12),
+            bg=TERM_BG, fg=TERM_FG,
+            insertbackground=TERM_FG,       # white cursor
+            wrap="word", relief="flat",
+            padx=8, pady=6,
         )
-        chat_scroll = ttk.Scrollbar(
-            chat_frame, orient="vertical",
-            command=self.chat_display.yview,
+        term_scroll = ttk.Scrollbar(
+            term_frame, orient="vertical",
+            command=self.term.yview,
         )
-        self.chat_display.configure(yscrollcommand=chat_scroll.set)
-        self.chat_display.pack(side="left", fill="both", expand=True)
-        chat_scroll.pack(side="right", fill="y")
+        self.term.configure(yscrollcommand=term_scroll.set)
+        self.term.pack(side="left", fill="both", expand=True)
+        term_scroll.pack(side="right", fill="y")
 
-        # Configure text tags for styling
-        self.chat_display.tag_configure("user", foreground=ACCENT, font=self.f_heading)
-        self.chat_display.tag_configure("ai", foreground=TEXT)
-        self.chat_display.tag_configure("system", foreground=GREEN, font=self.f_small)
-        self.chat_display.tag_configure("warning", foreground=RED, font=self.f_small)
-
-        # Input area
-        input_frame = tk.Frame(body, bg=WHITE)
-        input_frame.pack(fill="x", pady=(0, 4))
-
-        self.chat_input = tk.Entry(
-            input_frame, font=self.f_body,
-            bg=BG, fg=TEXT, relief="solid", bd=1,
-        )
-        self.chat_input.pack(side="left", fill="x", expand=True, ipady=4)
-        self.chat_input.bind("<Return>", self._on_chat_send)
-
-        self.chat_send_btn = ttk.Button(
-            input_frame, text="Send", style="NavAccent.TButton",
-            cursor="hand2", command=self._on_chat_send,
-        )
-        self.chat_send_btn.pack(side="right", padx=(6, 0))
+        # Keyboard: forward every keypress to the pty
+        self.term.bind("<Key>", self._term_key)
+        # Block mouse-paste that would bypass our handler
+        self.term.bind("<<Paste>>", lambda e: "break")
 
         # Bottom nav
         bottom = tk.Frame(parent, bg=WHITE)
@@ -1867,11 +1867,67 @@ class CandelaWizard(tk.Tk):
             command=self._finish_interact,
         ).pack(side="right")
 
-    def _append_chat(self, text, tag="ai"):
-        self.chat_display.configure(state="normal")
-        self.chat_display.insert("end", text + "\n", tag)
-        self.chat_display.configure(state="disabled")
-        self.chat_display.see("end")
+    # ── Terminal keyboard handler ─────────────────────────────────
+    def _term_key(self, event):
+        """Forward keypresses to the pty master fd."""
+        fd = getattr(self, "_pty_master", None)
+        if fd is None:
+            return "break"
+        ch = event.char
+        if event.keysym == "Return":
+            ch = "\n"
+        elif event.keysym == "BackSpace":
+            ch = "\x7f"
+        elif event.keysym in ("Up", "Down", "Left", "Right", "Shift_L",
+                               "Shift_R", "Control_L", "Control_R",
+                               "Alt_L", "Alt_R", "Meta_L", "Meta_R",
+                               "Caps_Lock", "Escape", "Tab"):
+            return "break"          # ignore navigation / modifier keys
+        elif not ch:
+            return "break"
+        try:
+            os.write(fd, ch.encode("utf-8"))
+        except OSError:
+            pass
+        return "break"              # prevent tk from inserting text itself
+
+    # ── Terminal output poller ────────────────────────────────────
+    def _poll_pty(self):
+        """Read available bytes from pty master and insert into the Text widget."""
+        fd = getattr(self, "_pty_master", None)
+        if fd is None:
+            return
+        try:
+            while select.select([fd], [], [], 0)[0]:
+                chunk = os.read(fd, 4096)
+                if not chunk:
+                    self._on_pty_eof()
+                    return
+                text = chunk.decode("utf-8", errors="replace")
+                self._term_insert(text)
+        except OSError:
+            self._on_pty_eof()
+            return
+        # Schedule next poll (50 ms — responsive)
+        self._pty_poll_id = self.after(50, self._poll_pty)
+
+    def _term_insert(self, text):
+        """Insert text at the end of the terminal widget."""
+        # Strip ANSI escape sequences (TERM=dumb should prevent most, but just in case)
+        text = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", text)
+        # Handle carriage returns from progress bars
+        text = re.sub(r"[^\n]*\r(?!\n)", "", text)
+        self.term.insert("end", text)
+        self.term.see("end")
+        # Detect model ready (first "You>" prompt)
+        if not self._model_ready and "You>" in text:
+            self._model_ready = True
+
+    def _on_pty_eof(self):
+        """Called when the model subprocess exits."""
+        if not self._model_ready:
+            self.term.insert("end", "\n[Model process exited before loading]\n")
+            self.term.see("end")
 
     # ── Background test runner (runs while user interacts) ─────────
     def _start_background_tests(self):
@@ -1915,16 +1971,14 @@ class CandelaWizard(tk.Tk):
 
         threading.Thread(target=_run, daemon=True).start()
 
-    # ── Persistent model subprocess ────────────────────────────────
+    # ── Model process via pty ─────────────────────────────────────
     def _start_model_process(self):
-        """Launch demo_model_guardian.py --interactive as a persistent subprocess."""
+        """Launch demo_model_guardian.py --interactive inside a pty."""
         if self.model_process and self.model_process.poll() is None:
             return  # already running
 
         self._model_ready = False
-        self._append_chat("Loading the AI model — this may take 20-30 seconds…", "system")
-        self.chat_input.config(state="disabled")
-        self.chat_send_btn.config(state="disabled")
+        self._pty_master = None
 
         model_dir = "models/TinyLlama-1.1B-Chat-v1.0"
         if self.selected_model:
@@ -1937,191 +1991,78 @@ class CandelaWizard(tk.Tk):
             sys.executable,
             str(SANDBOX / "demo_model_guardian.py"),
             "--interactive",
-            "--prompt", "hello",       # required by argparse, ignored in interactive mode
+            "--prompt", "hello",
             "--mode", "strict",
             "--max-new-tokens", "150",
             "--show-blocked",
             "--model-dir", model_dir,
         ]
+
+        # Create a pty pair and spawn the process
+        master_fd, slave_fd = pty.openpty()
         env = os.environ.copy()
+        env["TERM"] = "dumb"           # suppress ANSI escape sequences
+        env["COLUMNS"] = "80"
+        env["LINES"] = "24"
         env["PYTHONUNBUFFERED"] = "1"
+
         self.model_process = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, bufsize=0,
-            cwd=str(SANDBOX), env=env,
+            cmd,
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            cwd=str(SANDBOX),
+            env=env,
+            close_fds=True,
         )
-        # Reader thread: watch stdout for "You> " prompt and responses
-        threading.Thread(
-            target=self._model_reader, daemon=True,
-        ).start()
+        os.close(slave_fd)             # parent only uses master side
 
-    def _model_reader(self):
-        """Background thread: read model subprocess stdout character by character."""
-        proc = self.model_process
-        if not proc or not proc.stdout:
-            return
-        buf = ""
-        response_lines: list[str] = []
-        try:
-            fd = proc.stdout.fileno()
-            while True:
-                chunk = os.read(fd, 4096)
-                if not chunk:
-                    break
-                buf += chunk.decode("utf-8", errors="replace")
-                # Check for "You> " prompt — model is ready for input
-                while "You>" in buf:
-                    before, _, buf = buf.partition("You>")
-                    # Strip trailing whitespace from the prompt marker
-                    buf = buf.lstrip(" ")
-                    # Process any lines that came before the prompt
-                    for ln in before.split("\n"):
-                        stripped = ln.rstrip()
-                        if stripped:
-                            response_lines.append(stripped)
-                    if not self._model_ready:
-                        self._model_ready = True
-                        self.after(0, self._on_model_ready)
-                    elif response_lines:
-                        rl = list(response_lines)
-                        response_lines.clear()
-                        self.after(0, lambda r=rl: self._show_model_response(r))
-                    else:
-                        response_lines.clear()
-        except Exception:
-            pass
-        # Process ended
-        if response_lines:
-            rl = list(response_lines)
-            self.after(0, lambda r=rl: self._show_model_response(r))
-        # If model never became ready, it crashed during loading
-        if not self._model_ready:
-            # Read stderr for clues
-            err = ""
-            try:
-                if proc.stderr:
-                    err = proc.stderr.read().decode("utf-8", errors="replace")[-300:]
-            except Exception:
-                pass
-            self.after(0, lambda e=err: self._on_model_crash(e))
+        # Make master fd non-blocking so poll never stalls the GUI
+        flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
+        fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-    def _on_model_crash(self, stderr_tail):
-        """Called when the model subprocess dies before becoming ready."""
-        self._remove_last_chat_line()
-        msg = "The model process exited before it could load."
-        if stderr_tail:
-            msg += f"\n\n{stderr_tail.strip()}"
-        self._append_chat(msg, "warning")
-        self.chat_input.config(state="normal")
-        self.chat_send_btn.config(state="disabled")
+        self._pty_master = master_fd
 
-    def _on_model_ready(self):
-        """Called when the model subprocess prints its first 'You> ' prompt."""
-        self._remove_last_chat_line()
-        self._append_chat("Model loaded — type a message and press Enter.", "system")
-        self.chat_input.config(state="normal")
-        self.chat_send_btn.config(state="normal")
-        self.chat_input.focus_set()
+        # Show a loading message in the terminal
+        self.term.delete("1.0", "end")
+        self.term.insert("end", "Loading the AI model — this may take 20-30 seconds…\n\n")
+        self.term.see("end")
 
-    def _show_model_response(self, lines: list[str]):
-        """Parse the accumulated output lines from one model turn."""
-        self._remove_last_chat_line()  # remove "Thinking…"
-
-        # Extract model output and CANDELA verdict from the structured output
-        model_output = []
-        has_violation = False
-        in_model_output = False
-        for ln in lines:
-            if "=== Model Output ===" in ln:
-                in_model_output = True
-                continue
-            if in_model_output and ln.startswith("==="):
-                in_model_output = False
-                continue
-            if in_model_output and ln.strip():
-                model_output.append(ln)
-            if "FAIL" in ln and "mode=" in ln:
-                has_violation = True
-            if "output blocked" in ln.lower():
-                has_violation = True
-                model_output.append("(Response blocked by CANDELA)")
-
-        if model_output:
-            self._append_chat("AI: " + "\n".join(model_output), "ai")
-        else:
-            # No model output section found — show raw non-empty lines
-            content = [ln for ln in lines if ln.strip()
-                       and "Generating" not in ln
-                       and "Loading" not in ln]
-            if content:
-                self._append_chat("AI: " + "\n".join(content[:10]), "ai")
-            else:
-                self._append_chat("(No response from model)", "system")
-
-        if has_violation:
-            self._append_chat(
-                "⚠ CANDELA detected a rule violation in this response",
-                "warning",
-            )
-        else:
-            self._append_chat(
-                "✓ CANDELA: Response checked — no violations found",
-                "system",
-            )
-        self.chat_input.config(state="normal")
-        self.chat_send_btn.config(state="normal")
-        self.chat_input.focus_set()
-
-    def _on_chat_send(self, event=None):
-        msg = self.chat_input.get().strip()
-        if not msg:
-            return
-        if not self._model_ready:
-            return
-        proc = self.model_process
-        if not proc or proc.poll() is not None:
-            self._append_chat("(Model process is not running)", "system")
-            return
-
-        self.chat_input.delete(0, "end")
-        self.chat_input.config(state="disabled")
-        self.chat_send_btn.config(state="disabled")
-
-        self._append_chat(f"You: {msg}", "user")
-        self._append_chat("Thinking…", "system")
-
-        # Write to the model's stdin
-        try:
-            proc.stdin.write((msg + "\n").encode("utf-8"))
-            proc.stdin.flush()
-        except Exception as ex:
-            self._append_chat(f"(Could not send to model: {ex})", "system")
-            self.chat_input.config(state="normal")
-            self.chat_send_btn.config(state="normal")
+        # Start polling for output
+        self._poll_pty()
 
     def _stop_model_process(self):
-        """Gracefully shut down the persistent model subprocess."""
+        """Gracefully shut down the model subprocess and pty."""
+        # Cancel the pty poller
+        poll_id = getattr(self, "_pty_poll_id", None)
+        if poll_id is not None:
+            self.after_cancel(poll_id)
+            self._pty_poll_id = None
+
+        # Send exit command through the pty
+        fd = getattr(self, "_pty_master", None)
+        if fd is not None:
+            try:
+                os.write(fd, b"exit\n")
+            except OSError:
+                pass
+
         proc = self.model_process
         if proc and proc.poll() is None:
-            try:
-                proc.stdin.write(b"exit\n")
-                proc.stdin.flush()
-            except Exception:
-                pass
             try:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
+
+        # Close pty master
+        if fd is not None:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+        self._pty_master = None
         self.model_process = None
         self._model_ready = False
-
-    def _remove_last_chat_line(self):
-        self.chat_display.configure(state="normal")
-        content = self.chat_display.get("1.0", "end-1c")
-        lines = content.split("\n")
-        if lines and ("Thinking" in lines[-1] or "Loading the AI" in lines[-1]):
-            self.chat_display.delete(f"end-{len(lines[-1])+1}c", "end")
-        self.chat_display.configure(state="disabled")
 
     def _finish_interact(self):
         self._stop_model_process()
