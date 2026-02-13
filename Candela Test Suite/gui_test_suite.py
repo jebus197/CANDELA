@@ -418,6 +418,24 @@ PHASE_NAMES = {
     8: "Generating report",
 }
 
+# Friendly explanations shown during each phase
+PHASE_DETAIL = {
+    2: "Making sure CANDELA correctly validates inputs and catches "
+       "malformed or dangerous content before it reaches the model.",
+    3: "Testing each operating mode — from lightweight regex scanning "
+       "to full AI-powered semantic analysis — to confirm they all work.",
+    4: "Checking every safety rule in the selected ruleset. CANDELA should "
+       "catch violations like leaked passwords, credit cards, and private data.",
+    5: "Sending real prompts to the AI model with CANDELA active. Each response "
+       "is checked in real time for safety rule violations.",
+    6: "Verifying that every check CANDELA performed was properly logged "
+       "in the audit trail — creating a tamper-proof compliance record.",
+    7: "Pushing the system hard with rapid-fire requests and edge cases "
+       "to make sure CANDELA stays reliable under pressure.",
+    8: "Compiling all results into a detailed report you can share with "
+       "reviewers, auditors, or compliance officers.",
+}
+
 
 # ══════════════════════════════════════════════════════════════════════
 #  GUI Application
@@ -467,6 +485,27 @@ class CandelaWizard(tk.Tk):
         self.f_sidebar_active = tkfont.Font(family="Helvetica", size=11, weight="bold")
         self.f_big     = tkfont.Font(family="Helvetica", size=40, weight="bold")
         self.f_mono    = tkfont.Font(family="Courier", size=11)
+
+        # ── ttk button styles (trackpad-friendly, consistent) ──
+        style = ttk.Style()
+        style.theme_use("default")
+        style.configure("Nav.TButton",
+            font=("Helvetica", 12),
+            padding=(14, 6),
+            background=BG, foreground=TEXT,
+        )
+        style.map("Nav.TButton",
+            background=[("active", HOVER_BG)],
+        )
+        style.configure("NavAccent.TButton",
+            font=("Helvetica", 12, "bold"),
+            padding=(18, 6),
+            background=ACCENT, foreground=WHITE,
+        )
+        style.map("NavAccent.TButton",
+            background=[("active", ACCENT_HOVER)],
+            foreground=[("active", WHITE)],
+        )
 
         # ── Layout: sidebar + content ──
         self.sidebar = tk.Frame(self, bg=SIDEBAR_BG, width=170)
@@ -656,22 +695,17 @@ class CandelaWizard(tk.Tk):
         bar.pack(fill="x", side="bottom", padx=24, pady=(0, 14))
 
         if back:
-            btn = tk.Button(
-                bar, text="Back", font=self.f_body,
-                bg=BG, fg=TEXT, relief="flat",
-                padx=14, pady=5, cursor="hand2",
-                command=self._back,
+            back_btn = ttk.Button(
+                bar, text="Back", style="Nav.TButton",
+                command=self._back, cursor="hand2",
             )
-            btn.pack(side="left")
+            back_btn.pack(side="left")
 
-        btn = tk.Button(
-            bar, text=next_text, font=self.f_heading,
-            bg=ACCENT, fg=WHITE, relief="flat",
-            padx=18, pady=5, cursor="hand2",
-            activebackground=ACCENT_HOVER, activeforeground=WHITE,
-            command=next_cmd or self._next,
+        next_btn = ttk.Button(
+            bar, text=next_text, style="NavAccent.TButton",
+            command=next_cmd or self._next, cursor="hand2",
         )
-        btn.pack(side="right")
+        next_btn.pack(side="right")
         return bar
 
     # ══════════════════════════════════════════════════════════════════
@@ -799,8 +833,9 @@ class CandelaWizard(tk.Tk):
         ).pack(anchor="w", pady=(0, 2))
         tk.Label(
             body,
-            text="CANDELA needs a model to test against. Models already "
-                 "on your computer are shown first.",
+            text="CANDELA needs a model to test against. Only models your "
+                 f"computer can run ({self.sys_info['ram_gb']} GB memory, "
+                 f"{self.sys_info['gpu_label']}) are shown.",
             font=self.f_small, bg=WHITE, fg=TEXT_LIGHT,
             wraplength=430, justify="left",
         ).pack(anchor="w", pady=(0, 10))
@@ -905,11 +940,16 @@ class CandelaWizard(tk.Tk):
         for w in self.model_list_inner.winfo_children():
             w.destroy()
 
-        if not self.models:
+        # Only show models this hardware can actually run
+        runnable = [m for m in self.models if m["status"] != "unsuitable"]
+
+        if not runnable:
             tk.Label(
                 self.model_list_inner,
-                text="No compatible models found.\n"
-                     "The test will download one automatically.",
+                text="No models found that fit your hardware.\n"
+                     f"Your computer has {self.sys_info['ram_gb']} GB of memory.\n\n"
+                     "Try closing other applications to free up memory,\n"
+                     "or the test will download a small model automatically.",
                 font=self.f_small, bg=WHITE, fg=TEXT_LIGHT, justify="center",
             ).pack(padx=12, pady=20)
             return
@@ -918,7 +958,7 @@ class CandelaWizard(tk.Tk):
         locals_shown = False
         downloads_shown = False
 
-        for i, model in enumerate(self.models):
+        for i, model in enumerate(runnable):
             # Section divider
             if model["local"] and not locals_shown:
                 tk.Label(
@@ -997,12 +1037,13 @@ class CandelaWizard(tk.Tk):
                 )
 
     def _select_model(self, model):
-        if model["status"] == "unsuitable":
+        if model["status"] == "risky":
             ok = messagebox.askyesno(
-                "Are you sure?",
-                f"{model['name']} needs more memory than your computer has.\n\n"
-                f"{model['reason']}.\n\n"
-                "Your computer may become very slow. Continue anyway?",
+                "This model may be tight",
+                f"{model['name']} will use most of your available memory.\n\n"
+                "Your computer may slow down during the test. A smaller "
+                "model would be a safer choice.\n\n"
+                "Use this model anyway?",
                 icon="warning",
             )
             if not ok:
@@ -1198,10 +1239,29 @@ class CandelaWizard(tk.Tk):
     def _begin_tests(self):
         """Transition from Review to the appropriate next step."""
         if self.selected_profile == "quick":
-            # Skip preparation, go straight to running
+            ok = messagebox.askyesno(
+                "Ready to run",
+                "This will run CANDELA's core rule checks.\n\n"
+                "No AI model is needed for the quick check.\n\n"
+                "Start the tests now?",
+            )
+            if not ok:
+                return
             self._show_step(6)
         else:
-            # Go to preparation (download / configure)
+            model_name = (
+                self.selected_model["name"] if self.selected_model else "the selected model"
+            )
+            ok = messagebox.askyesno(
+                "Ready to launch",
+                f"This will launch {model_name} with CANDELA's safety "
+                f"layer active, then run the full test suite against it.\n\n"
+                f"CANDELA will check every response the model produces "
+                f"and log the results.\n\n"
+                f"Start now?",
+            )
+            if not ok:
+                return
             self._show_step(5)
 
     # ══════════════════════════════════════════════════════════════════
@@ -1253,11 +1313,9 @@ class CandelaWizard(tk.Tk):
         tk.Frame(parent, bg=WHITE).pack(fill="both", expand=True)
         cancel_bar = tk.Frame(parent, bg=WHITE)
         cancel_bar.pack(fill="x", side="bottom", padx=24, pady=(0, 14))
-        self.prep_cancel_btn = tk.Button(
-            cancel_bar, text="Cancel", font=self.f_body,
-            bg=BG, fg=TEXT, relief="flat",
-            padx=14, pady=5, cursor="hand2",
-            command=self._cancel_prep,
+        self.prep_cancel_btn = ttk.Button(
+            cancel_bar, text="Cancel", style="Nav.TButton",
+            cursor="hand2", command=self._cancel_prep,
         )
         self.prep_cancel_btn.pack(side="right")
 
@@ -1514,7 +1572,15 @@ class CandelaWizard(tk.Tk):
             body, text="Starting…",
             font=self.f_body, bg=WHITE, fg=TEXT_LIGHT,
         )
-        self.run_phase_label.pack(anchor="w", pady=(0, 10))
+        self.run_phase_label.pack(anchor="w", pady=(0, 2))
+
+        # Live description of what's happening right now
+        self.run_detail_label = tk.Label(
+            body, text="",
+            font=self.f_small, bg=WHITE, fg=TEXT_MUTED,
+            wraplength=430, justify="left",
+        )
+        self.run_detail_label.pack(anchor="w", pady=(0, 10))
 
         # Progress bar
         style = ttk.Style()
@@ -1549,11 +1615,9 @@ class CandelaWizard(tk.Tk):
         tk.Frame(parent, bg=WHITE).pack(fill="both", expand=True)
         stop_bar = tk.Frame(parent, bg=WHITE)
         stop_bar.pack(fill="x", side="bottom", padx=24, pady=(0, 14))
-        self.stop_btn = tk.Button(
-            stop_bar, text="Stop",
-            font=self.f_body, bg=BG, fg=TEXT, relief="flat",
-            padx=14, pady=5, cursor="hand2",
-            command=self._stop_run,
+        self.stop_btn = ttk.Button(
+            stop_bar, text="Stop", style="Nav.TButton",
+            cursor="hand2", command=self._stop_run,
         )
         self.stop_btn.pack(side="right")
 
@@ -1691,6 +1755,9 @@ class CandelaWizard(tk.Tk):
             self.run_phase_label.config(
                 text=PHASE_NAMES.get(phase, f"Phase {phase}") + "…",
             )
+            self.run_detail_label.config(
+                text=PHASE_DETAIL.get(phase, ""),
+            )
 
     def _stop_run(self):
         self.run_cancelled = True
@@ -1711,9 +1778,12 @@ class CandelaWizard(tk.Tk):
 
         self.interact_status = tk.Label(
             body,
-            text="The AI model is running with CANDELA active.\n"
-                 "Type a message below and see CANDELA check the response in real time.",
-            font=self.f_body, bg=WHITE, fg=TEXT_LIGHT,
+            text="The automated tests are done — now you can try it yourself.\n\n"
+                 "The AI model is running with CANDELA watching every response. "
+                 "Type anything below and see CANDELA check it in real time. "
+                 "Try asking for something sensitive — like a password or credit "
+                 "card number — and watch CANDELA catch it.",
+            font=self.f_small, bg=WHITE, fg=TEXT_LIGHT,
             wraplength=430, justify="left",
         )
         self.interact_status.pack(anchor="w", pady=(0, 10))
@@ -1755,11 +1825,9 @@ class CandelaWizard(tk.Tk):
         self.chat_input.pack(side="left", fill="x", expand=True, ipady=4)
         self.chat_input.bind("<Return>", self._on_chat_send)
 
-        self.chat_send_btn = tk.Button(
-            input_frame, text="Send", font=self.f_body,
-            bg=ACCENT, fg=WHITE, relief="flat",
-            padx=12, cursor="hand2",
-            command=self._on_chat_send,
+        self.chat_send_btn = ttk.Button(
+            input_frame, text="Send", style="NavAccent.TButton",
+            cursor="hand2", command=self._on_chat_send,
         )
         self.chat_send_btn.pack(side="right", padx=(6, 0))
 
@@ -1773,11 +1841,9 @@ class CandelaWizard(tk.Tk):
         )
         self.interact_candela_status.pack(side="left")
 
-        tk.Button(
+        ttk.Button(
             bottom, text="Finish & see results",
-            font=self.f_heading, bg=ACCENT, fg=WHITE, relief="flat",
-            padx=18, pady=5, cursor="hand2",
-            activebackground=ACCENT_HOVER, activeforeground=WHITE,
+            style="NavAccent.TButton", cursor="hand2",
             command=self._finish_interact,
         ).pack(side="right")
 
@@ -1883,40 +1949,45 @@ class CandelaWizard(tk.Tk):
         self.result_icon_lbl = tk.Label(
             body, text="", font=self.f_big, bg=WHITE,
         )
-        self.result_icon_lbl.pack(pady=(16, 4))
+        self.result_icon_lbl.pack(pady=(8, 2))
 
         self.result_text_lbl = tk.Label(
             body, text="", font=self.f_title, bg=WHITE, fg=TEXT,
         )
-        self.result_text_lbl.pack(pady=(0, 12))
+        self.result_text_lbl.pack(pady=(0, 6))
 
         self.result_detail = tk.Frame(
             body, bg=BG, relief="solid", bd=1,
             highlightbackground=CARD_BORDER, highlightthickness=1,
         )
-        self.result_detail.pack(fill="x", pady=(0, 10))
+        self.result_detail.pack(fill="x", pady=(0, 6))
+
+        # Explanation of what the results mean
+        self.result_explain = tk.Label(
+            body, text="", font=self.f_small, bg=WHITE, fg=TEXT,
+            wraplength=430, justify="left",
+        )
+        self.result_explain.pack(anchor="w", pady=(2, 4))
 
         self.result_report = tk.Label(
             body, text="", font=self.f_small, bg=WHITE, fg=TEXT_LIGHT,
             wraplength=430, justify="left",
         )
-        self.result_report.pack(anchor="w", pady=(0, 10))
+        self.result_report.pack(anchor="w", pady=(0, 6))
 
-        # Action buttons
+        # Action buttons — consistent style
         btn_frame = tk.Frame(body, bg=WHITE)
-        btn_frame.pack(pady=6)
+        btn_frame.pack(pady=4)
 
-        tk.Button(
-            btn_frame, text="Run again",
-            font=self.f_body, bg=BG, fg=TEXT, relief="flat",
-            padx=14, pady=5, cursor="hand2",
+        ttk.Button(
+            btn_frame, text="Run again", style="Nav.TButton",
+            cursor="hand2",
             command=lambda: self._show_step(0),
         ).pack(side="left", padx=6)
 
-        tk.Button(
-            btn_frame, text="Exit",
-            font=self.f_heading, bg=ACCENT, fg=WHITE, relief="flat",
-            padx=18, pady=5, cursor="hand2",
+        ttk.Button(
+            btn_frame, text="Exit", style="NavAccent.TButton",
+            cursor="hand2",
             command=self.quit,
         ).pack(side="left", padx=6)
 
@@ -1968,12 +2039,36 @@ class CandelaWizard(tk.Tk):
             ).pack(side="left")
         tk.Frame(self.result_detail, bg=BG, height=6).pack()
 
+        # What this means — give the user context
+        if passed:
+            meaning = (
+                "CANDELA checked every AI response against your chosen safety "
+                "rules and correctly caught all the violations it was supposed to. "
+                "This means the system is working as designed — it can detect "
+                "leaked passwords, credit card numbers, personal data, and other "
+                "sensitive content before it reaches end users.\n\n"
+                "This is the evidence organisations need to demonstrate AI "
+                "compliance to regulators, auditors, and stakeholders."
+            )
+        else:
+            meaning = (
+                "Some checks did not behave as expected. This could mean "
+                "certain safety rules need attention, or the AI model "
+                "produced unexpected responses. Review the detailed report "
+                "below for specifics on what failed and why.\n\n"
+                "Even partial results demonstrate that CANDELA is actively "
+                "monitoring AI output — the report shows exactly what was "
+                "tested and where issues were found."
+            )
+        self.result_explain.config(text=meaning)
+
         # Report location
         if Path(report_path).exists():
             self.result_report.config(
-                text=f"A detailed report has been saved to:\n{report_path}\n\n"
-                     "You can share this report with reviewers, auditors, "
-                     "or anyone who needs proof that CANDELA works correctly.",
+                text=f"Your report has been saved to:\n{report_path}\n\n"
+                     "Share this with reviewers, auditors, or compliance officers "
+                     "as evidence that CANDELA is working. The report will remain "
+                     "on your computer until you delete it.",
             )
         else:
             self.result_report.config(
