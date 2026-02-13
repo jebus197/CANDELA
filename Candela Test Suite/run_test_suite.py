@@ -121,6 +121,39 @@ def run_cmd(cmd: list[str], cwd: str | None = None, timeout: int = 300) -> subpr
     )
 
 
+def ensure_pytest():
+    """Make sure pytest is available in the current Python environment.
+
+    If pytest is missing (common when running under a standalone Python 3.11
+    that wasn't set up with the project venv), install it automatically so
+    reviewers don't need manual pip surgery.
+    """
+    check = subprocess.run(
+        [sys.executable, "-m", "pytest", "--version"],
+        capture_output=True, text=True,
+    )
+    if check.returncode == 0:
+        return  # already available
+
+    print("  pytest not found — installing automatically...")
+    install = subprocess.run(
+        [sys.executable, "-m", "pip", "install", "--quiet", "pytest"],
+        capture_output=True, text=True,
+    )
+    if install.returncode != 0:
+        # Try --user as fallback (no write access to site-packages)
+        install = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--quiet", "--user", "pytest"],
+            capture_output=True, text=True,
+        )
+    if install.returncode == 0:
+        print("  pytest installed successfully.")
+    else:
+        print("  WARNING: Could not install pytest automatically.")
+        print("  Phase 2 (unit tests) may fail. Install manually with:")
+        print(f"    {sys.executable} -m pip install pytest")
+
+
 # ── System Scan ────────────────────────────────────────────────────────
 def system_scan() -> dict:
     """Scan system resources and return a summary."""
@@ -225,6 +258,9 @@ def print_model_recommendation(pick: dict):
 def run_phase2() -> dict:
     """Run pytest unit tests (directive validation + Merkle proof)."""
     print_phase(2, "Unit Tests")
+
+    # Ensure pytest is available before running unit tests
+    ensure_pytest()
 
     results = {"phase": 2, "title": "Unit Tests", "tests": []}
 
