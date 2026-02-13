@@ -660,6 +660,9 @@ class CandelaWizard(tk.Tk):
             self._start_preparation()
         elif idx == 6:
             self._start_run()
+        elif idx == 7:
+            # Give keyboard focus to chat input so typing works immediately
+            self.after(100, lambda: self.chat_input.focus_set())
         elif idx == 8:
             pass  # results shown by caller
 
@@ -1825,11 +1828,17 @@ class CandelaWizard(tk.Tk):
         bottom = tk.Frame(parent, bg=WHITE)
         bottom.pack(fill="x", side="bottom", padx=24, pady=(0, 14))
 
+        ttk.Button(
+            bottom, text="Back", style="Nav.TButton",
+            cursor="hand2",
+            command=lambda: self._show_step(6),
+        ).pack(side="left")
+
         self.interact_candela_status = tk.Label(
             bottom, text="CANDELA: Active ✓",
             font=self.f_badge, bg=WHITE, fg=GREEN,
         )
-        self.interact_candela_status.pack(side="left")
+        self.interact_candela_status.pack(side="left", padx=(12, 0))
 
         ttk.Button(
             bottom, text="Finish & see results",
@@ -1927,7 +1936,8 @@ class CandelaWizard(tk.Tk):
 
     def _finish_interact(self):
         report = str(RESULTS_DIR / "Candela Test Suite Results.md")
-        self._show_final_results(True, report)
+        passed = getattr(self, "run_returncode", 1) == 0
+        self._show_final_results(passed, report)
 
     # ══════════════════════════════════════════════════════════════════
     #  STEP 8: Results
