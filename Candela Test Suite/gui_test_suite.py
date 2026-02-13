@@ -488,23 +488,16 @@ class CandelaWizard(tk.Tk):
 
         # ── ttk button styles (trackpad-friendly, consistent) ──
         style = ttk.Style()
-        style.theme_use("default")
+        # Use 'clam' theme — native trackpad response on macOS
+        style.theme_use("clam")
         style.configure("Nav.TButton",
             font=("Helvetica", 12),
             padding=(14, 6),
-            background=BG, foreground=TEXT,
         )
-        style.map("Nav.TButton",
-            background=[("active", HOVER_BG)],
-        )
+        # NavAccent is visually identical to Nav — same size, same font
         style.configure("NavAccent.TButton",
-            font=("Helvetica", 12, "bold"),
-            padding=(18, 6),
-            background=ACCENT, foreground=WHITE,
-        )
-        style.map("NavAccent.TButton",
-            background=[("active", ACCENT_HOVER)],
-            foreground=[("active", WHITE)],
+            font=("Helvetica", 12),
+            padding=(14, 6),
         )
 
         # ── Layout: sidebar + content ──
@@ -886,19 +879,18 @@ class CandelaWizard(tk.Tk):
             result = discover_models(self.sys_info)
             self.models = result
             self.models_loading = False
-            # Auto-select best model
-            if self.models and not self.selected_model:
-                for m in self.models:
-                    if m["local"] and m["status"] == "suitable":
-                        self.selected_model = m
-                        break
-                if not self.selected_model:
-                    for m in self.models:
-                        if m["status"] == "suitable":
-                            self.selected_model = m
-                            break
-                if not self.selected_model and self.models:
-                    self.selected_model = self.models[0]
+            # Auto-select best model — prefer local + suitable + smallest
+            runnable = [m for m in self.models if m["status"] == "suitable"]
+            if runnable and not self.selected_model:
+                # First choice: local models, sorted by size (smallest first)
+                local_ok = [m for m in runnable if m["local"]]
+                if local_ok:
+                    local_ok.sort(key=lambda m: m["size_gb"])
+                    self.selected_model = local_ok[0]
+                else:
+                    # Fall back to smallest downloadable
+                    runnable.sort(key=lambda m: m["size_gb"])
+                    self.selected_model = runnable[0]
             # Refresh UI if model step is visible
             if self.current_step == 2:
                 self.after(0, self._populate_model_rows)
@@ -940,8 +932,8 @@ class CandelaWizard(tk.Tk):
         for w in self.model_list_inner.winfo_children():
             w.destroy()
 
-        # Only show models this hardware can actually run
-        runnable = [m for m in self.models if m["status"] != "unsuitable"]
+        # Only show models this hardware can comfortably run
+        runnable = [m for m in self.models if m["status"] == "suitable"]
 
         if not runnable:
             tk.Label(
@@ -1015,19 +1007,26 @@ class CandelaWizard(tk.Tk):
                 wraplength=300, justify="left",
             ).pack(anchor="w")
 
-            # Right: suitability badge
-            badge_map = {
-                "suitable":   (GREEN, "Suitable"),
-                "risky":      (AMBER, "Risky"),
-                "unsuitable": (RED,   "Too large"),
-            }
-            badge_bg, badge_text = badge_map.get(
-                model["status"], (TEXT_MUTED, "?")
+            # Right: badge — show "Recommended" for first local suitable model
+            is_recommended = (
+                model["local"]
+                and model == runnable[0]  # first in sorted list
             )
-            tk.Label(
-                inner, text=f" {badge_text} ",
-                font=self.f_badge, bg=badge_bg, fg=WHITE,
-            ).pack(side="right", padx=4)
+            if is_recommended:
+                tk.Label(
+                    inner, text=" Recommended ",
+                    font=self.f_badge, bg=GREEN, fg=WHITE,
+                ).pack(side="right", padx=4)
+            elif model["local"]:
+                tk.Label(
+                    inner, text=" Ready ",
+                    font=self.f_badge, bg=GREEN, fg=WHITE,
+                ).pack(side="right", padx=4)
+            else:
+                tk.Label(
+                    inner, text=" Download ",
+                    font=self.f_badge, bg=LINK_BLUE, fg=WHITE,
+                ).pack(side="right", padx=4)
 
             # Click handler
             for w in (row, inner, left, name_row):
@@ -1037,17 +1036,6 @@ class CandelaWizard(tk.Tk):
                 )
 
     def _select_model(self, model):
-        if model["status"] == "risky":
-            ok = messagebox.askyesno(
-                "This model may be tight",
-                f"{model['name']} will use most of your available memory.\n\n"
-                "Your computer may slow down during the test. A smaller "
-                "model would be a safer choice.\n\n"
-                "Use this model anyway?",
-                icon="warning",
-            )
-            if not ok:
-                return
         self.selected_model = model
         self._populate_model_rows()
 
@@ -1199,21 +1187,12 @@ class CandelaWizard(tk.Tk):
             ).pack(side="left")
         tk.Frame(self.review_frame, bg=BG, height=6).pack()
 
-        # Warning
-        if (self.selected_model
-                and self.selected_model["status"] == "risky"
+        # Warning (only shown if somehow no model is selected)
+        if (not self.selected_model
                 and self.selected_profile != "quick"):
             self.review_warning.config(
-                text=f"Note: {model_name} will use most of your memory. "
-                     "Your computer may be slow during the test.",
+                text="No model selected. Go back to select one.",
                 fg=AMBER,
-            )
-        elif (self.selected_model
-                and self.selected_model["status"] == "unsuitable"
-                and self.selected_profile != "quick"):
-            self.review_warning.config(
-                text=f"Warning: {model_name} may be too large for your computer.",
-                fg=RED,
             )
         else:
             self.review_warning.config(text="")
