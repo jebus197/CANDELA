@@ -426,8 +426,9 @@ PHASE_DETAIL = {
        "to full AI-powered semantic analysis — to confirm they all work.",
     4: "Checking every safety rule in the selected ruleset. CANDELA should "
        "catch violations like leaked passwords, credit cards, and private data.",
-    5: "Sending real prompts to the AI model with CANDELA active. Each response "
-       "is checked in real time for safety rule violations.",
+    5: "Loading the AI model into memory and sending real prompts with CANDELA "
+       "active. Each response is checked in real time for safety rule violations. "
+       "This may take a moment the first time.",
     6: "Verifying that every check CANDELA performed was properly logged "
        "in the audit trail — creating a tamper-proof compliance record.",
     7: "Pushing the system hard with rapid-fire requests and edge cases "
@@ -1337,6 +1338,9 @@ class CandelaWizard(tk.Tk):
         has_torch = _has_pkg("torch")
         has_transformers = _has_pkg("transformers")
         has_hf_hub = _has_pkg("huggingface_hub")
+        has_dotenv = _has_pkg("dotenv")
+        has_web3 = _has_pkg("web3")
+        has_st = _has_pkg("sentence_transformers")
         model_is_local = model["local"]
 
         # Build a list of things we need to do
@@ -1347,6 +1351,12 @@ class CandelaWizard(tk.Tk):
             tasks.append(("torch", "pip", "torch"))
         if not has_transformers:
             tasks.append(("transformers", "pip", "transformers"))
+        if not has_st:
+            tasks.append(("sentence_transformers", "pip", "sentence-transformers"))
+        if not has_dotenv:
+            tasks.append(("dotenv", "pip", "python-dotenv"))
+        if not has_web3:
+            tasks.append(("web3", "pip", "web3"))
         if not has_hf_hub and not model_is_local:
             tasks.append(("huggingface_hub", "pip", "huggingface-hub"))
         if not model_is_local:
@@ -1719,8 +1729,9 @@ class CandelaWizard(tk.Tk):
 
         report = str(RESULTS_DIR / "Candela Test Suite Results.md")
 
-        # If full/anchor profile, offer interactive session; else go to results
-        if self.selected_profile != "quick" and self.run_returncode == 0:
+        # If full/anchor profile, always offer interactive session
+        # (the model loaded even if some non-model phases had issues)
+        if self.selected_profile != "quick":
             self.after(800, lambda: self._show_step(7))
         else:
             self.after(800, lambda: self._show_final_results(
