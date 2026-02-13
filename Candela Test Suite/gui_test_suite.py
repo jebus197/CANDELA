@@ -1318,13 +1318,9 @@ class CandelaWizard(tk.Tk):
         if self.run_cancelled:
             return
 
-        # ── Phase B: Nothing to do? Skip ahead ──────────────────────
+        # ── Phase B: Nothing to do? Skip silently ─────────────────────
         if not tasks:
-            self.after(0, lambda: self._prep_ui(
-                50, f"Found {model['name']} on your computer",
-                "Everything needed is already installed. No downloads required.",
-            ))
-            time.sleep(0.6)
+            pass  # everything present — go straight to configure
         else:
             # ── Phase C: Tell the user what's happening ──────────────
             pkg_tasks = [t for t in tasks if t[1] == "pip"]
