@@ -303,7 +303,12 @@ def run_phase3() -> dict:
     print_phase(3, "Mode Integration")
 
     results = {"phase": 3, "title": "Mode Integration", "tests": []}
-    modes = ["regex_only", "sync_light", "strict"]
+    # strict mode requires a semantic model — skip it in quick (no-model) profile
+    profile = os.environ.get("CANDELA_TEST_PROFILE", "full")
+    if profile == "quick":
+        modes = ["regex_only", "sync_light"]
+    else:
+        modes = ["regex_only", "sync_light", "strict"]
 
     for input_type in ["clean", "violation"]:
         input_file = TEST_DATA[f"{input_type}_input"]
@@ -369,12 +374,26 @@ def run_phase4() -> dict:
             proc = run_cmd(cmd, timeout=60)
             dt = time.time() - t0
 
-            test_passed = proc.returncode == 0
+            # For clean input, expect pass (no violations).
+            # For violation input, expect violations to be detected.
+            if input_type == "clean":
+                test_passed = proc.returncode == 0
+            else:
+                # Violation: process may still return 0, but output must show
+                # that violations were detected (FAIL / VIOLATION / BLOCKED).
+                output_upper = (proc.stdout + proc.stderr).upper()
+                test_passed = (
+                    "FAIL" in output_upper
+                    or "VIOLATION" in output_upper
+                    or "BLOCKED" in output_upper
+                )
+
             print(f"  {'PASS' if test_passed else 'FAIL'} ({dt:.1f}s)")
             results["tests"].append({
                 "name": label,
                 "passed": test_passed,
                 "time_s": round(dt, 1),
+                "returncode": proc.returncode,
             })
 
     # Test custom ruleset
@@ -395,12 +414,24 @@ def run_phase4() -> dict:
         ], timeout=60)
         dt = time.time() - t0
 
-        test_passed = proc.returncode == 0
+        output_upper = (proc.stdout + proc.stderr).upper()
+        if expect_violation:
+            # We expect the input to trigger a violation
+            test_passed = (
+                "FAIL" in output_upper
+                or "VIOLATION" in output_upper
+                or "BLOCKED" in output_upper
+            )
+        else:
+            # We expect a clean pass
+            test_passed = proc.returncode == 0
+
         print(f"  {'PASS' if test_passed else 'FAIL'} ({dt:.1f}s)")
         results["tests"].append({
             "name": f"custom_{label}",
             "passed": test_passed,
             "time_s": round(dt, 1),
+            "returncode": proc.returncode,
         })
 
     # Verify baseline bundle hash against ANCHORS.md
@@ -874,6 +905,9 @@ def main():
         phases = [2, 3, 4, 5, 6, 7]
 
     allow_live_anchor = args.profile == "anchor" and not args.skip_anchor
+
+    # Pass profile to phase functions (used by Phase 3 to skip strict mode in quick)
+    os.environ["CANDELA_TEST_PROFILE"] = args.profile
 
     print(f"Phases to run: {phases}")
     print(f"Live anchor: {'YES' if allow_live_anchor else 'NO'}")

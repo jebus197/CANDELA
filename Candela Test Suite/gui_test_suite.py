@@ -1499,6 +1499,7 @@ class CandelaWizard(tk.Tk):
             phases = [2, 3, 4, 5, 6, 7]
 
         self.run_cancelled = False
+        self.run_started_at = time.time()  # used to reject stale results
         self.run_progress.set(0)
         self.run_pct.config(text="0%")
         self.run_phase_label.config(text="Starting…")
@@ -1541,8 +1542,10 @@ class CandelaWizard(tk.Tk):
                     self.run_returncode = proc.returncode
 
                     # Parse results and update phase statuses
+                    # Only read results written AFTER this run started (avoid stale data)
                     json_path = RESULTS_DIR / "Candela Test Suite Results.json"
-                    if json_path.exists():
+                    if (json_path.exists()
+                            and json_path.stat().st_mtime >= self.run_started_at):
                         try:
                             data = json.loads(json_path.read_text())
                             for pr in data.get("phases", []):
@@ -1833,10 +1836,12 @@ class CandelaWizard(tk.Tk):
         for w in self.result_detail.winfo_children():
             w.destroy()
 
-        # Parse JSON results if available
+        # Parse JSON results if available — only from THIS run (reject stale files)
         json_path = RESULTS_DIR / "Candela Test Suite Results.json"
         total, ok = 0, 0
-        if json_path.exists():
+        run_start = getattr(self, "run_started_at", 0)
+        if (json_path.exists()
+                and json_path.stat().st_mtime >= run_start):
             try:
                 data = json.loads(json_path.read_text())
                 for pr in data.get("phases", []):
